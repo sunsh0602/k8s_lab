@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rook-ceph-cluster-prod
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: 'https://github.com/sunsh0602/k8s_lab.git'
+      targetRevision: master
+      ref: local-git
+    
+    - repoURL: 'https://charts.rook.io/release'
+      chart: rook-ceph-cluster
+      targetRevision: 1.19.0
+      helm:
+        valueFiles:
+          - $local-git/apps/rook-ceph/values-prod-3node-3disk.yaml # [필수] 식별자($local-git) 경로 내부의 운영 전용 밸류 파일 주입
+
+    - repoURL: 'https://github.com/sunsh0602/k8s_lab.git'
+      targetRevision: master
+      path: apps/rook-ceph/manifests
+      directory:
+        include: 'ceph-dashboard-istio-prod.yaml' # [선택] 해당 폴더 내에서 이번 운영 환경에만 선택적으로 포함할 파일 지정
+
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: rook-ceph
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

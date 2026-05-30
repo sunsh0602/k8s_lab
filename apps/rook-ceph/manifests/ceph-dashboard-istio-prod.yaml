@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: rook-ceph-mgr-dashboard
+  namespace: rook-ceph
+spec:
+  hosts:
+    - "ceph.apppaas.io"         # [필수] 운영 환경 대시보드 접근에 사용할 고유 도메인 주소
+  gateways:
+    - istio-system/istio-ingressgateway
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: rook-ceph-mgr-dashboard.rook-ceph.svc.cluster.local
+            port:
+              number: 7000

@@ -1,0 +1,49 @@
+# Istio Gateway: MetalLB가 붙인 ingress gateway LoadBalancer IP:80 으로 접속
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: ceph-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
+---
+# Ceph dashboard는 기본 HTTPS(7000). Istio가 클러스터 내부 TLS로 연결
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: rook-ceph-mgr-dashboard
+  namespace: rook-ceph
+spec:
+  host: rook-ceph-mgr-dashboard.rook-ceph.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: SIMPLE
+      insecureSkipVerify: true
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: ceph-dashboard
+  namespace: rook-ceph
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - istio-system/ceph-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: rook-ceph-mgr-dashboard.rook-ceph.svc.cluster.local
+            port:
+              number: 7000
