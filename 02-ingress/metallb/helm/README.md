@@ -1,4 +1,7 @@
-# MetalLB 설치 (Helm + Static CR)
+# MetalLB 설치 (Helm + yaml CR)
+
+> **Argo CD (권장):** [`../../argocd-apps/dev/app-metallb-dev.yaml`](../../argocd-apps/dev/app-metallb-dev.yaml) — `root-app-dev` App of Apps 하위.  
+> 이 문서는 **수동 설치** 및 **리소스 설명**용입니다.
 
 네트워크: `192.168.137.0/24`  
 IP 풀: `192.168.137.128` ~ `192.168.137.191` (64개)

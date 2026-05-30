@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metallb-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/sunsh0602/k8s_lab.git
+      targetRevision: master
+      ref: local-git
+
+    - repoURL: https://metallb.github.io/metallb
+      chart: metallb
+      targetRevision: 0.14.9
+      helm:
+        releaseName: metallb
+        valueFiles:
+          - $local-git/02-ingress/metallb/helm/values.yaml
+
+    - repoURL: https://github.com/sunsh0602/k8s_lab.git
+      targetRevision: master
+      path: 02-ingress/metallb/yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: metallb-system
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
