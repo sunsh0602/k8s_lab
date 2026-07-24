@@ -44,18 +44,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: istio-system
 
-  # istiod(pilot-discovery)가 런타임에 webhook의 caBundle/failurePolicy 등을 계속 갱신
-  # → Git과 영구 diff(selfHeal 루프) 발생. istiod가 관리하는 필드 전체를 diff에서 제외한다.
-  ignoreDifferences:
-    - group: admissionregistration.k8s.io
-      kind: ValidatingWebhookConfiguration
-      managedFieldsManagers:
-        - pilot-discovery
-    - group: admissionregistration.k8s.io
-      kind: MutatingWebhookConfiguration
-      managedFieldsManagers:
-        - pilot-discovery
-
+  # webhook caBundle/failurePolicy drift는 argocd-cm 전역 ignoreDifferences에서 처리
+  # (02-argocd/argocd-cm-ignoredifferences.yaml) → 앱별 설정 불필요
   syncPolicy:
     automated:
       prune: false

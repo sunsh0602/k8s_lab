@@ -1,0 +1,25 @@
+# ArgoCD 전역 ignoreDifferences (argocd-cm ConfigMap 병합 패치)
+#
+# 목적: 컨트롤러(istiod, metallb, cert-manager 등)가 런타임에 주입하는
+#       webhook/CRD의 caBundle·failurePolicy 필드를 diff에서 전역 제외.
+#       → 앱마다 ignoreDifferences를 넣지 않아도 caBundle drift(무한 OutOfSync)가 사라짐.
+#
+# 적용:
+#   kubectl -n argocd patch cm argocd-cm --type merge \
+#     --patch-file 02-argocd/argocd-cm-ignoredifferences.yaml
+#   kubectl -n argocd rollout restart statefulset argocd-application-controller
+#
+# ⚠️ 이 파일은 argocd-cm의 "일부 키만" 병합하는 패치다. 전체 apply(kubectl apply)로
+#    쓰면 argocd-cm의 다른 설정이 날아가므로 반드시 `patch --type merge`로 적용할 것.
+data:
+  resource.customizations.ignoreDifferences.admissionregistration.k8s.io_ValidatingWebhookConfiguration: |
+    jqPathExpressions:
+      - '.webhooks[]?.clientConfig.caBundle'
+      - '.webhooks[]?.failurePolicy'
+  resource.customizations.ignoreDifferences.admissionregistration.k8s.io_MutatingWebhookConfiguration: |
+    jqPathExpressions:
+      - '.webhooks[]?.clientConfig.caBundle'
+      - '.webhooks[]?.failurePolicy'
+  resource.customizations.ignoreDifferences.apiextensions.k8s.io_CustomResourceDefinition: |
+    jqPathExpressions:
+      - '.spec.conversion.webhook.clientConfig.caBundle'

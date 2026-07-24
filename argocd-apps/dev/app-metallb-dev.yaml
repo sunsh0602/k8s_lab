@@ -28,14 +28,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: metallb-system
 
-  # MetalLB 컨트롤러가 CRD conversion webhook의 caBundle을 런타임 주입 → Git과 영구 diff.
-  # MetalLB가 관리하는 필드를 diff에서 제외해 OutOfSync를 방지한다.
-  ignoreDifferences:
-    - group: apiextensions.k8s.io
-      kind: CustomResourceDefinition
-      managedFieldsManagers:
-        - MetalLB
-
   syncPolicy:
     automated:
       prune: false

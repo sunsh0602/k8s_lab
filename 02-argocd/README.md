@@ -75,6 +75,23 @@ kubectl -n argocd patch svc argocd-server \
 kubectl -n argocd get svc argocd-server   # EXTERNAL-IP 확인 (192.168.137.128~)
 ```
 
+## 3-1. 전역 ignoreDifferences (webhook caBundle drift 방지) — 권장
+
+istio·metallb·cert-manager 등은 컨트롤러가 런타임에 webhook/CRD의 `caBundle`·`failurePolicy`를
+주입한다. Git엔 그 값이 없어서 ArgoCD가 영구 `OutOfSync`(selfHeal 무한루프)로 본다.
+앱마다 `ignoreDifferences`를 넣는 대신 **argocd-cm에 전역으로 한 번** 설정하면 모든 앱에 적용된다.
+
+```bash
+kubectl -n argocd patch cm argocd-cm --type merge \
+  --patch-file argocd-cm-ignoredifferences.yaml
+kubectl -n argocd rollout restart statefulset argocd-application-controller
+```
+
+설정 내용: [argocd-cm-ignoredifferences.yaml](argocd-cm-ignoredifferences.yaml)
+(Validating/MutatingWebhookConfiguration의 caBundle·failurePolicy, CRD conversion caBundle 무시)
+
+> 이걸 적용하면 각 `app-*.yaml`에 개별 `ignoreDifferences`를 넣을 필요가 없다.
+
 ## 4. CLI 로그인 (선택)
 
 ```bash
