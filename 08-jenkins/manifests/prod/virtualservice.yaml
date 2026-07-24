@@ -1,0 +1,20 @@
+# Jenkins UI를 Istio Ingress Gateway로 노출 — 운영계
+# Gateway 참조: istio-system/istio-ingressgateway (04-istio/manifests/prod)
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: jenkins
+  namespace: jenkins
+  annotations:
+    argocd.argoproj.io/sync-wave: "50"
+spec:
+  hosts:
+    - "jenkins.local"   # ⚠️ 실제 도메인으로 조정
+  gateways:
+    - istio-system/istio-ingressgateway
+  http:
+    - route:
+        - destination:
+            host: jenkins.jenkins.svc.cluster.local
+            port:
+              number: 8080

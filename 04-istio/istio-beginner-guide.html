@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Istio 처음 배우기</title>
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --surface: #ffffff;
+    --surface-alt: #eef1ee;
+    --ink: #1c2321;
+    --ink-soft: #5b6b66;
+    --ink-faint: #8a958f;
+    --border: #dde3de;
+    --accent: #0f7a6d;
+    --accent-strong: #0b5c52;
+    --accent-soft: rgba(15, 122, 109, 0.08);
+    --accent-soft-2: rgba(15, 122, 109, 0.16);
+    --warn: #b5651d;
+    --warn-soft: rgba(181, 101, 29, 0.08);
+    --code-bg: #1c2420;
+    --code-ink: #e7efec;
+    --code-border: #2c3630;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Apple SD Gothic Neo", BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", Roboto, sans-serif;
+    line-height: 1.7;
+    font-size: 17px;
+  }
+
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 64px 24px 100px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    margin-bottom: 56px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
+    background: var(--accent-soft);
+    padding: 5px 12px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin-bottom: 14px;
+    color: var(--ink);
+  }
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--ink-soft);
+    max-width: 56ch;
+  }
+
+  /* ---------- Chaos vs Mesh comparison ---------- */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 40px;
+  }
+
+  .compare-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+
+  .compare-card h4 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
+  }
+
+  .compare-card.bad h4 { color: var(--warn); }
+  .compare-card.good h4 { color: var(--accent-strong); }
+
+  .mesh-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .compare-card p {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 12px;
+  }
+
+  /* ---------- Sections ---------- */
+  section {
+    margin-top: 64px;
+  }
+
+  .chapter-mark {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .chapter-num {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-strong);
+    background: var(--accent-soft);
+    border-radius: 6px;
+    padding: 3px 9px;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  h2 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 28px 0 12px;
+  }
+
+  p { margin-bottom: 14px; }
+  p:last-child { margin-bottom: 0; }
+
+  .lede {
+    font-size: 16px;
+    color: var(--ink-soft);
+    margin-bottom: 24px;
+  }
+
+  strong { font-weight: 700; color: var(--ink); }
+
+  .kbd {
+    font-family: ui-monospace, "SF Mono", "Courier New", monospace;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 0.86em;
+    color: var(--accent-strong);
+  }
+
+  /* ---------- Analogy callout ---------- */
+  .analogy {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 15px;
+  }
+
+  .analogy .tag {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent-strong);
+    margin-bottom: 6px;
+  }
+
+  /* ---------- Architecture diagram ---------- */
+  .arch {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin: 24px 0;
+  }
+
+  .plane {
+    border: 1.5px dashed var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+
+  .plane + .plane { margin-top: 20px; }
+
+  .plane-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    margin-bottom: 12px;
+  }
+
+  .plane-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .node {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  .node.control {
+    background: var(--accent-strong);
+  }
+
+  .pod-box {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface-alt);
+  }
+
+  .pod-box .app {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .pod-box .sidecar {
+    background: var(--accent-soft-2);
+    color: var(--accent-strong);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .plane-arrows {
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 20px;
+    margin: 6px 0;
+  }
+
+  /* ---------- CRD table ---------- */
+  .crd-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .crd-table th {
+    background: var(--accent-strong);
+    color: #fff;
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+  }
+
+  .crd-table td {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .crd-table tr:nth-child(even) td { background: var(--surface-alt); }
+
+  .crd-name {
+    font-family: ui-monospace, "SF Mono", "Courier New", monospace;
+    font-weight: 700;
+    color: var(--accent-strong);
+    white-space: nowrap;
+  }
+
+  .crd-desc { color: var(--ink); }
+  .crd-analogy { color: var(--ink-soft); font-size: 13px; }
+
+  /* ---------- Steps (genuine sequence) ---------- */
+  .steps {
+    counter-reset: step;
+    margin: 24px 0;
+  }
+
+  .step {
+    position: relative;
+    padding-left: 44px;
+    padding-bottom: 28px;
+    border-left: 2px solid var(--border);
+    margin-left: 15px;
+  }
+
+  .step:last-child {
+    border-left: 2px solid transparent;
+    padding-bottom: 0;
+  }
+
+  .step::before {
+    counter-increment: step;
+    content: counter(step);
+    position: absolute;
+    left: -15px;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .step h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    padding-top: 3px;
+  }
+
+  .step p {
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+
+  /* ---------- Code block (no <code>/<pre> tags — see note) ---------- */
+  .cmd {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--code-ink);
+    white-space: pre;
+    margin: 10px 0;
+  }
+
+  .cmd .comment { color: #7fa89e; }
+
+  /* ---------- Gateway diagram ---------- */
+  .gateway-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin: 24px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .gw-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .gw-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    background: var(--accent-soft);
+    border: 2px solid var(--accent);
+  }
+
+  .gw-label {
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .gw-sub {
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-align: center;
+  }
+
+  .gw-arrow {
+    color: var(--ink-faint);
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  /* ---------- Bookinfo diagram ---------- */
+  .bookinfo {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin: 24px 0;
+  }
+
+  .bi-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .bi-row:last-child { margin-bottom: 0; }
+
+  .bi-node {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .bi-node.center { background: var(--accent-soft); border-color: var(--accent); }
+  .bi-node small { display: block; color: var(--ink-faint); font-weight: 400; font-size: 10px; }
+
+  .bi-connector {
+    color: var(--ink-faint);
+    font-size: 13px;
+  }
+
+  /* ---------- Tip / note boxes ---------- */
+  .tip, .note {
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14.5px;
+  }
+
+  .tip {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+  }
+
+  .note {
+    background: var(--warn-soft);
+    border-left: 3px solid var(--warn);
+  }
+
+  .tip .tag, .note .tag {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  .tip .tag { color: var(--accent-strong); }
+  .note .tag { color: var(--warn); }
+
+  /* ---------- Summary checklist ---------- */
+  .recap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-top: 24px;
+  }
+
+  .recap ul { list-style: none; }
+
+  .recap li {
+    padding: 8px 0 8px 26px;
+    position: relative;
+    font-size: 14.5px;
+  }
+
+  .recap li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+
+  footer p + p { margin-top: 4px; }
+
+  @media (max-width: 600px) {
+    .wrap { padding: 40px 18px 80px; }
+    h1 { font-size: 30px; }
+    h2 { font-size: 21px; }
+    .compare { grid-template-columns: 1fr; }
+    .gateway-diagram { flex-direction: column; }
+    .gw-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="hero">
+      <span class="eyebrow">초보자를 위한 서비스 메시 입문</span>
+      <h1>Istio, 처음부터 이해하기</h1>
+      <p class="hero-sub">서비스가 10개, 100개로 늘어나면 "누가 누구에게 어떻게 말을 거는지" 관리가 지옥이 됩니다. Istio는 이 문제를 애플리케이션 코드를 건드리지 않고 해결하는 도구입니다.</p>
+
+      <div class="compare">
+        <div class="compare-card bad">
+          <h4>Istio 없이</h4>
+          <svg class="mesh-svg" viewBox="0 0 220 140" fill="none">
+            <circle cx="30" cy="20" r="10" fill="#b5651d"/>
+            <circle cx="190" cy="20" r="10" fill="#b5651d"/>
+            <circle cx="30" cy="120" r="10" fill="#b5651d"/>
+            <circle cx="190" cy="120" r="10" fill="#b5651d"/>
+            <circle cx="110" cy="70" r="10" fill="#b5651d"/>
+            <g stroke="#b5651d" stroke-width="1.4" opacity="0.55">
+              <line x1="30" y1="20" x2="190" y2="20"/>
+              <line x1="30" y1="20" x2="30" y2="120"/>
+              <line x1="30" y1="20" x2="190" y2="120"/>
+              <line x1="30" y1="20" x2="110" y2="70"/>
+              <line x1="190" y1="20" x2="30" y2="120"/>
+              <line x1="190" y1="20" x2="190" y2="120"/>
+              <line x1="190" y1="20" x2="110" y2="70"/>
+              <line x1="30" y1="120" x2="190" y2="120"/>
+              <line x1="30" y1="120" x2="110" y2="70"/>
+              <line x1="190" y1="120" x2="110" y2="70"/>
+            </g>
+          </svg>
+          <p>각 서비스가 재시도·타임아웃·인증을 직접 구현. 서비스가 늘수록 연결선이 기하급수적으로 얽힘.</p>
+        </div>
+        <div class="compare-card good">
+          <h4>Istio 사용 시</h4>
+          <svg class="mesh-svg" viewBox="0 0 220 140" fill="none">
+            <circle cx="30" cy="20" r="10" fill="#0f7a6d"/>
+            <circle cx="190" cy="20" r="10" fill="#0f7a6d"/>
+            <circle cx="30" cy="120" r="10" fill="#0f7a6d"/>
+            <circle cx="190" cy="120" r="10" fill="#0f7a6d"/>
+            <circle cx="110" cy="70" r="16" fill="#0b5c52"/>
+            <g stroke="#0f7a6d" stroke-width="1.6" opacity="0.7">
+              <line x1="30" y1="20" x2="110" y2="70"/>
+              <line x1="190" y1="20" x2="110" y2="70"/>
+              <line x1="30" y1="120" x2="110" y2="70"/>
+              <line x1="190" y1="120" x2="110" y2="70"/>
+            </g>
+          </svg>
+          <p>모든 통신이 사이드카 프록시를 거쳐 이루어지고, 규칙은 중앙(Istiod)에서 한 번에 관리.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. 서비스 메시란 -->
+    <section>
+      <div class="chapter-mark"><span class="chapter-num">01</span><h2>서비스 메시가 뭔가요?</h2></div>
+      <p class="lede">한 문장으로: <strong>서비스끼리 대화하는 방식을 관리해주는 인프라 계층</strong>입니다.</p>
+
+      <p>마이크로서비스 아키텍처에서는 하나의 요청을 처리하기 위해 여러 서비스가 서로를 호출합니다. 이때 "타임아웃은 몇 초로 할지", "실패하면 몇 번 재시도할지", "누가 누구를 호출할 권한이 있는지" 같은 규칙이 필요한데, 이걸 서비스마다 코드로 구현하면 서비스 100개는 곧 100가지 방식이 생기는 셈입니다.</p>
+
+      <div class="analogy">
+        <span class="tag">비유로 이해하기</span>
+        각 건물(서비스)마다 자체 경비원을 고용하는 대신, 도시 전체에 <strong>공통 교통 시스템(신호등, 표지판, CCTV)</strong>을 까는 것과 비슷합니다. 건물은 자기 할 일만 하고, 도로 규칙은 도시(서비스 메시)가 관리합니다.
+      </div>
+
+      <p>Istio는 이 "공통 교통 시스템" 역할을 하는 오픈소스 서비스 메시입니다.</p>
+    </section>
+
+    <!-- 2. 아키텍처 -->
+    <section>
+      <div class="chapter-mark"><span class="chapter-num">02</span><h2>어떻게 동작하나요? — 컨트롤 플레인과 데이터 플레인</h2></div>
+      <p class="lede">Istio는 크게 두 개의 층으로 나뉩니다: <strong>지시를 내리는 곳</strong>과 <strong>실제로 트래픽이 지나가는 곳</strong>.</p>
+
+      <div class="arch">
+        <div class="plane">
+          <div class="plane-label">컨트롤 플레인 — 규칙을 정하는 두뇌</div>
+          <div class="plane-body">
+            <div class="node control">Istiod</div>
+          </div>
+        </div>
+        <div class="plane-arrows">↓ 설정 &amp; 인증서 전달 ↓</div>
+        <div class="plane">
+          <div class="plane-label">데이터 플레인 — 실제 트래픽이 흐르는 곳</div>
+          <div class="plane-body">
+            <div class="pod-box">
+              <div class="app">productpage</div>
+              <div class="sidecar">Envoy 사이드카</div>
+            </div>
+            <div class="pod-box">
+              <div class="app">reviews</div>
+              <div class="sidecar">Envoy 사이드카</div>
+            </div>
+            <div class="pod-box">
+              <div class="app">ratings</div>
+              <div class="sidecar">Envoy 사이드카</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Istiod (컨트롤 플레인)</h3>
+      <p>서비스 발견, 트래픽 규칙 구성, 인증서 관리를 담당하는 <strong>중앙 관리자</strong>입니다. 사람이 <span class="kbd">kubectl apply</span>로 규칙을 등록하면, Istiod가 이걸 이해해서 각 사이드카에게 전달합니다.</p>
+
+      <h3>Envoy 사이드카 (데이터 플레인)</h3>
+      <p>내 애플리케이션 파드마다 자동으로 하나씩 따라붙는 <strong>작은 프록시</strong>입니다. 앱 코드는 전혀 몰라도, 들어오고 나가는 모든 트래픽이 이 사이드카를 거치면서 재시도·타임아웃·암호화·권한 검사가 적용됩니다.</p>
+
+      <div class="tip">
+        <span class="tag">핵심 포인트</span>
+        애플리케이션 코드는 단 한 줄도 바뀌지 않습니다. 사이드카가 네트워크 트래픽을 가로채서 규칙을 대신 적용해주기 때문입니다.
+      </div>
+
+      <h3>Ingress / Egress Gateway</h3>
+      <p>메시의 "정문"과 "후문"입니다. <strong>Ingress Gateway</strong>는 외부에서 들어오는 트래픽을 받고, <strong>Egress Gateway</strong>는 메시 안에서 바깥(외부 API 등)으로 나가는 트래픽을 관리합니다.</p>
+    </section>
+
+    <!-- 3. CRD -->
+    <section>
+      <div class="chapter-mark"><span class="chapter-num">03</span><h2>규칙은 어떻게 정의하나요? — 주요 리소스</h2></div>
+      <p class="lede">Istio는 Kubernetes에 새로운 리소스 타입(CRD)을 추가해서, YAML로 트래픽 규칙을 선언합니다.</p>
+
+      <table class="crd-table">
+        <thead>
+          <tr><th>리소스</th><th>하는 일</th><th>쉽게 말하면</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="crd-name">Gateway</td>
+            <td class="crd-desc">메시 경계에서 들어오고 나가는 트래픽을 허용/제어</td>
+            <td class="crd-analogy">건물의 정문 — 어떤 포트로 누가 들어올 수 있는지</td>
+          </tr>
+          <tr>
+            <td class="crd-name">VirtualService</td>
+            <td class="crd-desc">요청을 어디로 라우팅할지 규칙 정의</td>
+            <td class="crd-analogy">안내데스크 — "이 요청은 v2로 보내주세요"</td>
+          </tr>
+          <tr>
+            <td class="crd-name">DestinationRule</td>
+            <td class="crd-desc">목적지 서비스의 로드밸런싱·연결 정책 설정</td>
+            <td class="crd-analogy">창구 운영 규칙 — "한 창구당 몇 명까지"</td>
+          </tr>
+          <tr>
+            <td class="crd-name">ServiceEntry</td>
+            <td class="crd-desc">메시 바깥의 외부 서비스를 메시 안에 등록</td>
+            <td class="crd-analogy">외부 손님을 방문자 명단에 등록</td>
+          </tr>
+          <tr>
+            <td class="crd-name">AuthorizationPolicy</td>
+            <td class="crd-desc">누가 누구를 호출할 수 있는지 접근 제어</td>
+            <td class="crd-analogy">출입 카드 — 이 방은 이 팀만 출입 가능</td>
+          </tr>
+          <tr>
+            <td class="crd-name">RequestAuthentication</td>
+            <td class="crd-desc">요청의 신원을 어떻게 확인할지 정의</td>
+            <td class="crd-analogy">신분증 검사 방식 지정</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 4. 설치 -->
+    <section>
+      <div class="chapter-mark"><span class="chapter-num">04</span><h2>설치해보기 (NKS 기준)</h2></div>
+      <p class="lede">아래 순서는 순서가 중요합니다 — 앞 단계가 끝나야 다음 단계가 의미를 가집니다.</p>
+
+      <div class="steps">
+        <div class="step">
+          <h4>istioctl 다운로드</h4>
+          <p><span class="kbd">istioctl</span>은 Istio를 설치·점검·디버깅하는 커맨드라인 도구입니다.</p>
+          <div class="cmd">oras pull ${REGISTRY}/istioctl-tool:${VERSION}
+tar -zxvf istio-${VERSION}-linux-amd64.tar.gz
+cd istio-${VERSION}
+export PATH=$PWD/bin:$PATH</div>
+        </div>
+
+        <div class="step">
+          <h4>프로파일 선택 후 설치</h4>
+          <p>Istio는 용도에 맞는 <strong>설치 프로파일</strong>을 제공합니다 — 학습/테스트는 <span class="kbd">demo</span>, 운영 환경은 <span class="kbd">minimal</span>/<span class="kbd">production</span>을 씁니다.</p>
+          <div class="cmd">istioctl install --set profile=demo --set hub=${REGISTRY} -y</div>
+        </div>
+
+        <div class="step">
+          <h4>설치 확인</h4>
+          <p><span class="kbd">istio-system</span> 네임스페이스에 컨트롤 플레인과 게이트웨이가 떴는지 확인합니다.</p>
+          <div class="cmd">kubectl get all -n istio-system</div>
+          <p>istiod 1개, ingress/egress gateway 각 1개 — 총 3개 파드가 Running이면 성공입니다.</p>
+        </div>
+
+        <div class="step">
+          <h4>네임스페이스에 사이드카 자동 주입 활성화</h4>
+          <p>이 레이블을 붙인 네임스페이스에 생성되는 모든 새 파드에는 Envoy 사이드카가 자동으로 따라붙습니다.</p>
+          <div class="cmd">kubectl label namespace default istio-injection=enabled</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Bookinfo 예제 -->
+    <section>
+      <div class="chapter-mark"><span class="chapter-num">05</span><h2>예제로 감 잡기 — Bookinfo</h2></div>
+      <p class="lede">Istio 공식 예제 애플리케이션으로, 여러 마이크로서비스가 서로 호출하는 전형적인 구조를 보여줍니다.</p>
+
+      <div class="bookinfo">
+        <div class="bi-row">
+          <div class="bi-node center">productpage<small>메인 화면</small></div>
+        </div>
+        <div class="bi-row"><span class="bi-connector">↓ 호출</span></div>
+        <div class="bi-row">
+          <div class="bi-node">details<small>책 정보</small></div>
+          <div class="bi-node">reviews<small>v1 · v2 · v3</small></div>
+        </div>
+        <div class="bi-row"><span class="bi-connector">reviews ↓ 호출</span></div>
+        <div class="bi-row">
+          <div class="bi-node">ratings<small>평점</small></div>
+        </div>
+      </div>
+
+      <p>주목할 점은 <span class="kbd">reviews</span> 서비스에 <strong>버전이 3개</strong>라는 것입니다. 이런 구조에서 "트래픽의 90%는 v1로, 10%는 v3로" 같은 카나리 배포 규칙을 <strong>VirtualService</strong> 하나로 선언할 수 있는 것이 Istio의 강점입니다.</p>
+
+      <div class="cmd">kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml</div>
+
+      <p>배포 후 파드 상태를 보면 <strong>READY 칸이 2/2</strong>로 보입니다 — 앱 컨테이너 1개 + 사이드카 컨테이너 1개라는 뜻입니다.</p>
+      <div class="cmd">kubectl get pods
+<span class="comment"># NAME                    READY   STATUS</span>
+<span class="comment"># productpage-v1-...      2/2     Running</span></div>
+    </section>
+
+    <!-- 6. Gateway 노출 -->
+    <section>
+      <div class="chapter-mark"><span class="chapter-num">06</span><h2>외부에 열어주기 — Gateway</h2></div>
+      <p class="lede">지금까지 배포한 서비스는 클러스터 <strong>내부</strong>에서만 접근할 수 있습니다. 외부에서 접속하려면 Istio의 Gateway가 필요합니다.</p>
+
+      <div class="gateway-diagram">
+        <div class="gw-stage">
+          <div class="gw-icon">🌐</div>
+          <div class="gw-label">외부 사용자</div>
+          <div class="gw-sub">인터넷</div>
+        </div>
+        <div class="gw-arrow">→</div>
+        <div class="gw-stage">
+          <div class="gw-icon">🚪</div>
+          <div class="gw-label">Ingress Gateway</div>
+          <div class="gw-sub">메시의 정문</div>
+        </div>
+        <div class="gw-arrow">→</div>
+        <div class="gw-stage">
+          <div class="gw-icon">📄</div>
+          <div class="gw-label">VirtualService</div>
+          <div class="gw-sub">어디로 보낼지 결정</div>
+        </div>
+        <div class="gw-arrow">→</div>
+        <div class="gw-stage">
+          <div class="gw-icon">📦</div>
+          <div class="gw-label">productpage</div>
+          <div class="gw-sub">실제 서비스</div>
+        </div>
+      </div>
+
+      <div class="cmd">kubectl apply -f samples/bookinfo/networking/bookinfo-gateway.yaml
+
+<span class="comment"># 규칙에 문제가 없는지 검사</span>
+istioctl analyze</div>
+
+      <p>규칙이 정상이면 <span class="kbd">No validation issues found</span> 메시지가 나옵니다. 이제 게이트웨이의 접속 주소를 확인합니다:</p>
+
+      <div class="cmd">export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway \
+  -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway \
+  -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
+export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
+
+curl http://${GATEWAY_URL}/productpage</div>
+
+      <div class="tip">
+        <span class="tag">참고</span>
+        인터넷이 연결된 환경에서는 LoadBalancer의 외부 IP를 쓰고, 폐쇄망 환경에서는 NodePort 방식으로 접속 주소를 받아옵니다.
+      </div>
+    </section>
+
+    <!-- 7. 삭제 -->
+    <section>
+      <div class="chapter-mark"><span class="chapter-num">07</span><h2>정리하기</h2></div>
+      <p class="lede">테스트가 끝나면 리소스를 순서대로 되돌립니다. 애플리케이션 → 게이트웨이 → Istio 자체 순서입니다.</p>
+
+      <div class="cmd"><span class="comment"># 예제 앱만 삭제</span>
+kubectl delete -f samples/bookinfo/networking/bookinfo-gateway.yaml
+kubectl delete -f samples/bookinfo/platform/kube/bookinfo.yaml
+
+<span class="comment"># Istio 전체 삭제</span>
+istioctl uninstall --purge -y
+kubectl delete namespace istio-system
+kubectl label namespace default istio-injection-</div>
+
+      <div class="note">
+        <span class="tag">주의</span>
+        <span class="kbd">istioctl uninstall --purge</span>는 클러스터 전체의 Istio 구성 요소를 제거합니다. 다른 팀이 같은 클러스터를 쓰고 있다면 영향 범위를 먼저 확인하세요.
+      </div>
+    </section>
+
+    <!-- Recap -->
+    <div class="recap">
+      <h3 style="margin-top:0;">한눈에 정리</h3>
+      <ul>
+        <li>서비스 메시 = 서비스 간 통신을 앱 코드 밖에서 관리하는 인프라 계층</li>
+        <li>컨트롤 플레인(Istiod)이 규칙을 정하고, 데이터 플레인(Envoy 사이드카)이 실제로 실행</li>
+        <li>Gateway·VirtualService·DestinationRule로 "누가 들어오고, 어디로 가고, 어떤 정책을 쓸지" 선언</li>
+        <li>파드가 2/2 Ready로 보이면 사이드카가 정상 주입된 것</li>
+        <li>학습은 demo 프로필, 운영은 minimal/production 프로필</li>
+      </ul>
+    </div>
+
+    <footer>
+      <p>원문: NHN Cloud NKS Istio 가이드 문서를 초보자용으로 재구성</p>
+      <p>작성일: 2026-07-08</p>
+    </footer>
+  </div>
+</body>
+</html>

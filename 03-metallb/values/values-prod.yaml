@@ -1,0 +1,12 @@
+# MetalLB Helm chart overrides (metallb/metallb)
+# IP 대역은 chart values로 넣을 수 없음 → ../yaml/ CR 사용
+
+controller:
+  logLevel: info
+
+speaker:
+  logLevel: info
+  tolerateMaster: true
+
+crds:
+  enabled: true

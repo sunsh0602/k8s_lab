@@ -1,0 +1,15 @@
+# Vault Agent Injector only — Vault server runs on the host (master, 192.168.137.10:8200)
+server:
+  enabled: false
+
+injector:
+  enabled: true
+  externalVaultAddr: "http://192.168.137.10:8200"
+
+  # worker1 is currently NotReady; schedule on master (control-plane) instead
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+  affinity: ""

@@ -1,0 +1,45 @@
+# jenkins/jenkins Helm values — 개발계
+# 공식 차트: https://charts.jenkins.io  (chart: jenkins)
+
+controller:
+  # 컨트롤러(마스터)에서는 빌드를 실행하지 않고, 빌드는 k8s 동적 에이전트 Pod로 위임
+  numExecutors: 0
+
+  # 리소스 (개발계는 가볍게)
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      memory: "2Gi"
+
+  # UI 노출은 Istio VirtualService(manifests/dev)로 처리 → 차트 내장 Ingress 비활성
+  ingress:
+    enabled: false
+  serviceType: ClusterIP
+
+  # 설치할 플러그인 (JCasC / k8s 에이전트 / Git / 파이프라인)
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - configuration-as-code
+
+  # JCasC(Configuration as Code) — 설정을 코드로. Groovy init hook은 필요 시 여기에 추가
+  JCasC:
+    defaultConfig: true
+    configScripts:
+      welcome-message: |
+        jenkins:
+          systemMessage: "k8s_lab dev Jenkins — managed by ArgoCD (GitOps)"
+
+# 빌드 데이터 영속화 — OpenEBS LocalPV Hostpath (테스트용)
+# openebs 설치 시 기본 생성되는 storageClass. (kubectl get sc 로 확인)
+persistence:
+  enabled: true
+  storageClass: "openebs-hostpath"
+  size: "8Gi"
+
+# 동적 빌드 에이전트 (kubernetes 플러그인) — 기본 활성
+agent:
+  enabled: true

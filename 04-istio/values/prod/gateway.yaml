@@ -1,0 +1,3 @@
+# istio/gateway — Ingress Gateway (MetalLB LoadBalancer)
+service:
+  type: LoadBalancer

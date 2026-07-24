@@ -1,0 +1,73 @@
+operatorNamespace: rook-ceph # [필수] Rook 오퍼레이터가 실행 중인 네임스페이스 지정
+clusterName: rook-ceph       # [필수] 생성할 Ceph 클러스터의 고유 식별 명칭
+
+# ⚠️ rook-ceph-cluster 차트는 CephCluster spec을 반드시 cephClusterSpec 아래에 중첩해서 받는다.
+#    최상위에 두면 무시되고 차트 기본값(mon 3개, useAllNodes/useAllDevices=true)이 적용된다.
+cephClusterSpec:
+  cephVersion:
+    image: quay.io/ceph/ceph:v19.2.0 # [필수] 가동할 Ceph 엔진의 컨테이너 이미지 주소 및 버전
+    allowUnsupported: false          # [필수] 검증되지 않은 Ceph 버전의 실행 허용 여부
+
+  dataDirHostPath: /var/lib/rook     # [필수] 노드 로컬 내부에서 Ceph 메타데이터 및 설정을 보관할 경로
+
+  mon:
+    count: 1                    # [필수] 클러스터 상태 관리를 전담할 MON 프로세스의 가동 총량
+    allowMultiplePerNode: true  # [필수] 동일한 단일 노드 내에 MON 프로세스의 중복 배치 허용 여부
+  mgr:
+    count: 1                    # [필수] 모니터링 및 상태 지표 생성을 전담할 MGR 프로세스의 가동 총량
+    allowMultiplePerNode: true  # [필수] 동일한 단일 노드 내에 MGR 프로세스의 중복 배치 허용 여부
+
+  dashboard:
+    enabled: true               # [선택] Ceph 웹 관리 대시보드 인프라 활성화 여부
+    ssl: false                  # [선택] 대시보드 자체 통신 시 SSL/TLS 자체 암호화 적용 여부
+
+  monitoring:
+    enabled: false              # [선택] 프로메테우스 연동을 위한 ServiceMonitor 리소스 생성 여부
+
+  resources:                    # 각 프로세스별 컨테이너 자원(CPU/Memory) 제한 설정 영역
+    mon:
+      limits:
+        cpu: "1"                # MON 프로세스가 가동 중 사용할 수 있는 최대 CPU 한계량
+        memory: "1Gi"           # MON 프로세스가 가동 중 사용할 수 있는 최대 메모리 한계량
+      requests:
+        cpu: "500m"             # MON 프로세스 기동을 보장하기 위해 필요한 최소 CPU 요구량
+        memory: "512Mi"         # MON 프로세스 기동을 보장하기 위해 필요한 최소 메모리 요구량
+    mgr:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+    osd:
+      limits:
+        cpu: "2"
+        memory: "2Gi"
+      requests:
+        cpu: "1"
+        memory: "2Gi"
+
+  storage:
+    useAllNodes: false          # [필수] 쿠버네티스 클러스터 내 모든 워커 노드를 스토리지 노드로 강제 편입할지 여부
+    useAllDevices: false        # [필수] 지정 노드 내에서 감지되는 모든 빈 디스크를 자동 포맷 및 사용할지 여부
+    nodes:                      # 스토리지 공간을 추출할 대상 노드 수동 선언 영역
+      - name: worker1           # [필수] 대상 쿠버네티스 워커 노드의 정확한 이름
+        devices:
+          - name: nvme0n2       # [필수] 해당 노드 내부에서 Ceph 데이터 저장소(OSD)로 점유할 생(Raw) 디스크 장치명
+
+cephBlockPools:               # 블록 스토리지 풀(Pool) 생성 설정 영역
+  - name: ceph-blockpool      # [필수] 생성할 데이터 스토리지 풀의 고유 이름
+    spec:
+      failureDomain: osd      # [필수] 데이터 복제본 분산 저장의 기준 단위 (host: 노드 단위 / osd: 디스크 단위)
+      replicated:
+        size: 1               # [필수] 원본 데이터를 포함하여 클러스터 내부에 유지할 총 복제본의 수
+        requireSafeReplicaSize: false # [필수] 복제본 수가 지정치 미만으로 떨어졌을 때 입출력 차단 및 경고 발생 여부
+    storageClass:             # 생성한 풀을 쿠버네티스에 연결할 StorageClass 생성 설정 영역
+      enabled: true           # [선택] 쿠버네티스 스토리지 클래스 자원의 동시 자동 생성 여부
+      name: rook-ceph-block   # [필수] 애플리케이션(PVC)에서 호출할 스토리지 클래스의 식별 이름
+      isDefault: true         # [선택] 해당 클러스터의 기본(Default) 스토리지 클래스로 지정할지 여부
+      reclaimPolicy: Delete   # [필수] 사용하던 PVC가 삭제되었을 때 백엔드 Ceph 실제 볼륨 데이터의 영구 삭제 여부
+      allowVolumeExpansion: true # [필수] 볼륨 생성 이후 온라인 상태에서 실시간 용량 확장(증설) 허용 여부
+      parameters:
+        imageFormat: "2"      # [필수] Ceph RBD 이미지 아키텍처 포맷 버전 사양
+        imageFeatures: layering # [필수] RBD 볼륨이 지원할 기능 정의 (쿠버네티스 연동 시 필수 기능)

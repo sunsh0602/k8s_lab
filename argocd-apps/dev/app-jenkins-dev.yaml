@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: metallb-dev
+  name: jenkins-dev
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -12,21 +12,21 @@ spec:
       targetRevision: master
       ref: local-git
 
-    - repoURL: https://metallb.github.io/metallb
-      chart: metallb
-      targetRevision: 0.14.9
+    - repoURL: https://charts.jenkins.io
+      chart: jenkins
+      targetRevision: 5.8.18   # ⚠️ 최신 안정 버전 확인 후 고정 (helm search repo jenkinsci/jenkins --versions)
       helm:
-        releaseName: metallb
+        releaseName: jenkins
         valueFiles:
-          - $local-git/03-metallb/values/values-dev.yaml
+          - $local-git/08-jenkins/values/dev/jenkins.yaml
 
     - repoURL: https://github.com/sunsh0602/k8s_lab.git
       targetRevision: master
-      path: 03-metallb/manifests/dev
+      path: 08-jenkins/manifests/dev
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: metallb-system
+    namespace: jenkins
 
   syncPolicy:
     automated:

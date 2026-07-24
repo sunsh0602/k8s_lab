@@ -15,20 +15,20 @@ spec:
       targetRevision: 1.19.0                    # [필수] 고정하여 사용할 대상 헬름 차트 버전 번호
       helm:
         valueFiles:
-          - $local-git/apps/rook-ceph/values-dev-1node-1disk.yaml # [필수] 식별자($local-git) 경로 내부의 개발 전용 밸류 파일 주입
+          - $local-git/05-rook-ceph/values/values-dev-1node-1disk.yaml # [필수] 식별자($local-git) 경로 내부의 개발 전용 밸류 파일 주입
 
     - repoURL: 'https://github.com/sunsh0602/k8s_lab.git' # [필수] 추가 매니페스트를 불러올 내 원격 Git 저장소 주소
       targetRevision: master
-      path: apps/rook-ceph/manifests            # [필수] 동기화할 대상 YAML 파일들이 위치한 Git 내부 폴더 경로
+      path: 05-rook-ceph/manifests/dev          # [필수] 동기화할 대상 YAML 파일들이 위치한 Git 내부 폴더 경로
       directory:
-        include: 'ceph-dashboard-istio-dev.yaml' # [선택] 해당 폴더 내에서 이번 개발 환경에만 선택적으로 포함할 파일 지정
+        include: 'ceph-dashboard-istio.yaml' # [선택] 해당 폴더 내에서 이번 개발 환경에만 선택적으로 포함할 파일 지정
 
   destination:
     server: 'https://kubernetes.default.svc'    # [필수] 대상 리소스를 배포할 목적지 쿠버네티스 API 엔드포인트
     namespace: rook-ceph                        # [필수] 리소스들이 최종 설치될 대상 네임스페이스 명칭
   syncPolicy:
     automated:
-      prune: true             # [선택] Git에서 파일이 삭제되었을 때 쿠버네티스 클러스터 자원도 자동 삭제(가지치기)할지 여부
+      prune: false             # [선택] Git에서 파일이 삭제되었을 때 쿠버네티스 클러스터 자원도 자동 삭제(가지치기)할지 여부
       selfHeal: true          # [선택] 사용자가 클러스터 자원을 임의 수정 시 Git 상태로 자동 원복(자가치유)시킬지 여부
     syncOptions:
       - CreateNamespace=true  # [선택] 지정한 대상 네임스페이스가 클러스터에 존재하지 않을 시 자동 생성 여부

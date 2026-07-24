@@ -18,11 +18,11 @@ spec:
       helm:
         releaseName: metallb
         valueFiles:
-          - $local-git/02-ingress/metallb/helm/values.yaml
+          - $local-git/03-metallb/values/values-prod.yaml
 
     - repoURL: https://github.com/sunsh0602/k8s_lab.git
       targetRevision: master
-      path: 02-ingress/metallb/yaml
+      path: 03-metallb/manifests/prod
 
   destination:
     server: https://kubernetes.default.svc
@@ -30,7 +30,7 @@ spec:
 
   syncPolicy:
     automated:
-      prune: true
+      prune: false
       selfHeal: true
     syncOptions:
       - CreateNamespace=true

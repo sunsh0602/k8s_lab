@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alloy + LGTM 관찰 가능성 스택 구축 가이드</title>
+<style>
+  :root {
+    --bg: #faf7f2;
+    --surface: #ffffff;
+    --surface-alt: #f3ede3;
+    --ink: #23201a;
+    --ink-soft: #6e6459;
+    --ink-faint: #9a8f81;
+    --border: #e7ddce;
+    --accent: #d9730d;
+    --accent-strong: #a8500a;
+    --accent-soft: rgba(217, 115, 13, 0.09);
+    --accent-soft-2: rgba(217, 115, 13, 0.18);
+    --good: #3f7d58;
+    --good-soft: rgba(63, 125, 88, 0.09);
+    --bad: #ab3428;
+    --bad-soft: rgba(171, 52, 40, 0.08);
+    --code-bg: #221a11;
+    --code-ink: #f2e8d8;
+    --code-border: #362a1a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Apple SD Gothic Neo", BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", Roboto, sans-serif;
+    line-height: 1.7;
+    font-size: 17px;
+  }
+
+  .wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 64px 24px 100px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
+    background: var(--accent-soft);
+    padding: 5px 12px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin-bottom: 14px;
+  }
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--ink-soft);
+    max-width: 58ch;
+  }
+
+  /* Pillars */
+  .pillars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 36px;
+  }
+
+  .pillar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 14px;
+    text-align: center;
+  }
+
+  .pillar .icon { font-size: 26px; margin-bottom: 8px; }
+  .pillar h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .pillar p { font-size: 12px; color: var(--ink-soft); margin: 0; }
+
+  section { margin-top: 64px; }
+
+  .chapter-mark {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .chapter-num {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-strong);
+    background: var(--accent-soft);
+    border-radius: 6px;
+    padding: 3px 9px;
+    flex-shrink: 0;
+  }
+
+  h2 { font-size: 25px; font-weight: 800; letter-spacing: -0.01em; text-wrap: balance; }
+  h3 { font-size: 17px; font-weight: 700; margin: 26px 0 10px; }
+
+  p { margin-bottom: 14px; }
+  p:last-child { margin-bottom: 0; }
+
+  .lede { font-size: 16px; color: var(--ink-soft); margin-bottom: 22px; }
+
+  strong { font-weight: 700; color: var(--ink); }
+
+  .kbd {
+    font-family: ui-monospace, "SF Mono", "Courier New", monospace;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 0.86em;
+    color: var(--accent-strong);
+  }
+
+  .analogy {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 16px 20px;
+    margin: 18px 0;
+    font-size: 15px;
+  }
+
+  .analogy .tag {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent-strong);
+    margin-bottom: 6px;
+  }
+
+  /* Architecture diagram */
+  .arch {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 26px;
+    margin: 22px 0;
+  }
+
+  .arch-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .arch-row + .arch-row { margin-top: 14px; }
+
+  .arch-node {
+    background: var(--surface-alt);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .arch-node.source {
+    background: var(--surface);
+    border-style: dashed;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  .arch-node.collector {
+    background: var(--accent-strong);
+    color: #fff;
+    border: none;
+  }
+
+  .arch-node.store {
+    background: var(--accent-soft-2);
+    border-color: var(--accent);
+    color: var(--accent-strong);
+  }
+
+  .arch-node.viz {
+    background: var(--ink);
+    color: #fff;
+    border: none;
+  }
+
+  .arch-node small {
+    display: block;
+    font-weight: 400;
+    font-size: 10px;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+
+  .arch-connector {
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 18px;
+    margin: 4px 0;
+  }
+
+  /* Component table */
+  .ctable {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .ctable th {
+    background: var(--accent-strong);
+    color: #fff;
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+  }
+
+  .ctable td {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .ctable tr:nth-child(even) td { background: var(--surface-alt); }
+
+  .ctable .name {
+    font-family: ui-monospace, "SF Mono", "Courier New", monospace;
+    font-weight: 700;
+    color: var(--accent-strong);
+    white-space: nowrap;
+  }
+
+  .ctable .sub { color: var(--ink-faint); font-size: 12px; }
+
+  /* Pros / Cons */
+  .proscons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+
+  .pc-card {
+    border-radius: 14px;
+    padding: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .pc-card.good { background: var(--good-soft); border-color: var(--good); }
+  .pc-card.bad { background: var(--bad-soft); border-color: var(--bad); }
+
+  .pc-card h4 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+  }
+
+  .pc-card.good h4 { color: var(--good); }
+  .pc-card.bad h4 { color: var(--bad); }
+
+  .pc-card ul { list-style: none; }
+
+  .pc-card li {
+    font-size: 14px;
+    padding: 7px 0 7px 22px;
+    position: relative;
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+
+  .pc-card li:first-child { border-top: none; }
+
+  .pc-card.good li::before {
+    content: "+";
+    position: absolute;
+    left: 0;
+    font-weight: 800;
+    color: var(--good);
+  }
+
+  .pc-card.bad li::before {
+    content: "–";
+    position: absolute;
+    left: 0;
+    font-weight: 800;
+    color: var(--bad);
+  }
+
+  /* Steps */
+  .steps { margin: 22px 0; }
+
+  .step {
+    position: relative;
+    padding-left: 44px;
+    padding-bottom: 28px;
+    border-left: 2px solid var(--border);
+    margin-left: 15px;
+  }
+
+  .step:last-child { border-left: 2px solid transparent; padding-bottom: 0; }
+
+  .step-num {
+    position: absolute;
+    left: -15px;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .step h4 { font-size: 16px; font-weight: 700; margin-bottom: 6px; padding-top: 3px; }
+  .step p { font-size: 14.5px; color: var(--ink-soft); margin-bottom: 10px; }
+
+  .cmd {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--code-ink);
+    white-space: pre;
+    margin: 10px 0;
+  }
+
+  .cmd .comment { color: #b89a72; }
+
+  .tip, .note {
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14.5px;
+  }
+
+  .tip { background: var(--accent-soft); border-left: 3px solid var(--accent); }
+  .note { background: var(--bad-soft); border-left: 3px solid var(--bad); }
+
+  .tip .tag, .note .tag {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  .tip .tag { color: var(--accent-strong); }
+  .note .tag { color: var(--bad); }
+
+  /* Decision helper */
+  .decision {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 26px;
+    margin: 20px 0;
+  }
+
+  .decision-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .decision-row:first-child { border-top: none; }
+  .decision-row .q { color: var(--ink-soft); }
+  .decision-row .a { font-weight: 700; text-align: right; }
+  .decision-row .a.alloy { color: var(--accent-strong); }
+  .decision-row .a.simple { color: var(--good); }
+
+  .recap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-top: 24px;
+  }
+
+  .recap ul { list-style: none; }
+  .recap li { padding: 8px 0 8px 26px; position: relative; font-size: 14.5px; }
+  .recap li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+
+  footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+
+  footer p + p { margin-top: 4px; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 40px 18px 80px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 20px; }
+    .pillars { grid-template-columns: 1fr; }
+    .proscons { grid-template-columns: 1fr; }
+    .decision-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .decision-row .a { text-align: left; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="hero">
+      <span class="eyebrow">Observability 스택 구축 가이드</span>
+      <h1>Alloy + LGTM으로 관찰 가능성 갖추기</h1>
+      <p class="hero-sub">"장애가 나면 뭘 봐야 하지?"에 대한 답을 하나의 스택으로 통일하는 방법. Grafana Labs가 만든 수집기(Alloy)와 저장/조회 4종 세트(LGTM)를 함께 구축합니다.</p>
+
+      <div class="pillars">
+        <div class="pillar">
+          <div class="icon">📜</div>
+          <h4>로그 (Logs)</h4>
+          <p>"무슨 일이 있었나" — 이벤트 기록</p>
+        </div>
+        <div class="pillar">
+          <div class="icon">📈</div>
+          <h4>메트릭 (Metrics)</h4>
+          <p>"지금 수치가 어떤가" — 시계열 숫자</p>
+        </div>
+        <div class="pillar">
+          <div class="icon">🔗</div>
+          <h4>트레이스 (Traces)</h4>
+          <p>"요청이 어디를 거쳤나" — 호출 경로</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. 관찰가능성이란 -->
+    <section>
+      <div class="chapter-mark"><span class="chapter-num">01</span><h2>왜 로그·메트릭·트레이스를 따로 볼까?</h2></div>
+      <p class="lede">셋 다 "시스템 상태를 아는 방법"이지만, 던지는 질문이 다릅니다.</p>
+
+      <div class="analogy">
+        <span class="tag">비유로 이해하기</span>
+        병원 진료와 같습니다. <strong>혈액검사(메트릭)</strong>는 "지금 수치가 정상 범위인가"를 빠르게 알려주고, <strong>진료 기록(로그)</strong>은 "언제 무슨 증상이 있었는지" 시간순 기록을 남기고, <strong>정밀 촬영(트레이스)</strong>은 "문제가 몸의 어느 경로를 거쳐 발생했는지" 추적합니다. 셋 중 하나만으로는 정확한 진단이 어렵습니다.
+      </div>
+
+      <p>MSA 환경에서 요청 하나가 서비스 5개를 거친다면: <strong>메트릭</strong>으로 "reviews 서비스 응답시간이 튀었다"는 걸 감지하고, <strong>트레이스</strong>로 "어느 호출 구간에서 느려졌는지" 좁히고, <strong>로그</strong>로 "그 순간 정확히 어떤 에러가 찍혔는지" 확인하는 식으로 셋이 서로를 보완합니다.</p>
+    </section>
+
+    <!-- 2. LGTM + Alloy 구성요소 -->
+    <section>
+      <div class="chapter-mark"><span class="chapter-num">02</span><h2>구성 요소 — Alloy와 LGTM</h2></div>
+      <p class="lede">LGTM은 네 글자 각각이 하나의 컴포넌트를 가리키는 약어이고, Alloy는 이 넷에게 데이터를 실어나르는 배달원입니다.</p>
+
+      <table class="ctable">
+        <thead><tr><th>이름</th><th>역할</th><th>담당 축</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="name">Grafana Alloy</td>
+            <td>각 노드/파드에서 로그·메트릭·트레이스를 수집해 알맞은 저장소로 전달하는 통합 에이전트 (OpenTelemetry Collector 호환)</td>
+            <td class="sub">수집기</td>
+          </tr>
+          <tr>
+            <td class="name">Loki</td>
+            <td>로그 저장소. Elasticsearch처럼 본문 전체를 인덱싱하지 않고 레이블만 인덱싱해서 훨씬 가볍게 동작</td>
+            <td class="sub">로그</td>
+          </tr>
+          <tr>
+            <td class="name">Grafana</td>
+            <td>Loki·Mimir·Tempo를 한 화면에서 조회하는 시각화 대시보드</td>
+            <td class="sub">시각화</td>
+          </tr>
+          <tr>
+            <td class="name">Tempo</td>
+            <td>분산 트레이싱 저장소. OTLP로 수집한 스팬(span)을 저장하고 요청 흐름을 그래프로 재구성</td>
+            <td class="sub">트레이스</td>
+          </tr>
+          <tr>
+            <td class="name">Mimir</td>
+            <td>Prometheus 호환 메트릭 저장소. 장기 보관과 수평 확장이 어려운 단일 Prometheus의 한계를 보완</td>
+            <td class="sub">메트릭</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Alloy가 이전 Grafana Agent와 다른 점</h3>
+      <p>Grafana Agent는 2024년부로 Alloy로 통합·대체되었습니다. Alloy는 <strong>OpenTelemetry Collector와 호환되는 파이프라인 구성 언어</strong>를 쓰기 때문에, "수집 → 가공(필터링/레이블링) → 전달"을 하나의 설정 파일로 선언할 수 있고, 나중에 다른 벤더의 OTel 백엔드로 옮기기도 비교적 쉽습니다.</p>
+
+      <div class="arch">
+        <div class="arch-row">
+          <div class="arch-node source">Pod 로그<small>stdout</small></div>
+          <div class="arch-node source">노드 메트릭<small>cAdvisor 등</small></div>
+          <div class="arch-node source">앱 트레이스<small>OTLP SDK</small></div>
+        </div>
+        <div class="arch-connector">↓ 전부 수집 ↓</div>
+        <div class="arch-row">
+          <div class="arch-node collector">Grafana Alloy<small>DaemonSet</small></div>
+        </div>
+        <div class="arch-connector">↓ 종류별로 분배 ↓</div>
+        <div class="arch-row">
+          <div class="arch-node store">Loki<small>로그</small></div>
+          <div class="arch-node store">Mimir<small>메트릭</small></div>
+          <div class="arch-node store">Tempo<small>트레이스</small></div>
+        </div>
+        <div class="arch-connector">↓ 통합 조회 ↓</div>
+        <div class="arch-row">
+          <div class="arch-node viz">Grafana<small>대시보드 / 탐색</small></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 장단점 -->
+    <section>
+      <div class="chapter-mark"><span class="chapter-num">03</span><h2>장단점</h2></div>
+      <p class="lede">도입 전에 이 스택이 정말 필요한 규모인지 판단하는 데 참고하세요.</p>
+
+      <div class="proscons">
+        <div class="pc-card good">
+          <h4>장점</h4>
+          <ul>
+            <li>로그·메트릭·트레이스를 <strong>Grafana 한 화면</strong>에서 넘나들며 조회 (Explore 뷰의 연계 탐색)</li>
+            <li>전 구성 요소 <strong>오픈소스</strong> — Datadog·New Relic 대비 라이선스 비용 없음</li>
+            <li>Loki는 레이블 기반 인덱싱이라 Elasticsearch보다 <strong>스토리지·리소스 사용량이 적음</strong></li>
+            <li>Mimir·Loki·Tempo 모두 <strong>수평 확장 아키텍처</strong> — 트래픽이 커져도 같은 스택으로 대응 가능</li>
+            <li>Alloy가 <strong>OpenTelemetry 표준</strong>을 따라서 특정 벤더에 코드가 종속되지 않음</li>
+            <li>Grafana Labs가 4개 컴포넌트를 모두 만들어서 <strong>버전 호환성 문제가 적음</strong></li>
+          </ul>
+        </div>
+        <div class="pc-card bad">
+          <h4>단점</h4>
+          <ul>
+            <li>운영해야 할 컴포넌트가 <strong>5개(Alloy+LGTM)</strong>로 늘어나 초기 학습 곡선이 가파름</li>
+            <li>LogQL은 Elasticsearch의 <strong>풀텍스트 검색만큼 유연하지 않음</strong> (레이블을 미리 잘 설계해야 함)</li>
+            <li>Mimir/Loki를 제대로 쓰려면 <strong>객체 스토리지(S3/MinIO)</strong>가 사실상 필요 — 랩 환경엔 추가 부담</li>
+            <li>Alloy의 설정 언어(Alloy syntax, 구 River)가 비교적 최근에 나와 <strong>레퍼런스/커뮤니티 자료가 적음</strong></li>
+            <li>노드 1~2대짜리 소규모 클러스터에는 <strong>과한 스펙</strong>일 수 있음 (단일 Prometheus+Grafana로 충분한 경우도 많음)</li>
+            <li>장애 시 "관찰 도구 자체가 원인"이 되는 경우 <strong>디버깅 대상이 하나 더 늘어남</strong></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="decision">
+        <h3 style="margin-top:0;">이 스택이 맞는 상황인가?</h3>
+        <div class="decision-row"><span class="q">서비스가 여러 개고, 서로 호출하는 MSA 구조인가</span><span class="a alloy">그렇다 → Alloy+LGTM 적합</span></div>
+        <div class="decision-row"><span class="q">노드가 1~2대인 개인 랩/토이 프로젝트인가</span><span class="a simple">그렇다 → Prometheus+Grafana만으로 충분</span></div>
+        <div class="decision-row"><span class="q">분산 트레이싱(요청 흐름 추적)이 꼭 필요한가</span><span class="a alloy">그렇다 → Tempo 포함된 이 스택이 유리</span></div>
+        <div class="decision-row"><span class="q">로그를 풀텍스트로 자유롭게 검색해야 하는가</span><span class="a simple">그렇다 → Loki보다 Elasticsearch 계열 고려</span></div>
+      </div>
+    </section>
+
+    <!-- 4. 설치 매뉴얼 -->
+    <section>
+      <div class="chapter-mark"><span class="chapter-num">04</span><h2>설치 매뉴얼 (단일/소규모 클러스터 기준)</h2></div>
+      <p class="lede">운영 환경은 각 컴포넌트를 분산(마이크로서비스) 모드로 배포하지만, 랩처럼 노드가 적을 땐 <strong>모놀리식(단일 바이너리) 모드</strong>로 설치해 리소스를 아낍니다.</p>
+
+      <div class="tip">
+        <span class="tag">랩 환경 고려사항</span>
+        Loki·Mimir·Tempo는 기본적으로 오브젝트 스토리지(S3 호환)에 데이터를 저장하도록 설계되어 있습니다. 별도 S3/MinIO가 없다면 각 차트의 <span class="kbd">filesystem</span> 스토리지 모드로 설치해 로컬 디스크에 저장하도록 구성합니다. 데이터 보존 기간이 짧고 HA가 없다는 점을 감안하세요.
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h4>네임스페이스 준비 &amp; Helm repo 확인</h4>
+          <p>Grafana 공식 Helm 저장소 하나로 LGTM 전체를 설치할 수 있습니다.</p>
+          <div class="cmd">kubectl create namespace monitoring
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update grafana</div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <h4>Loki 설치 (로그)</h4>
+          <p><span class="kbd">SingleBinary</span> 배포 모드 + <span class="kbd">filesystem</span> 스토리지로 설치합니다.</p>
+          <div class="cmd">helm install loki grafana/loki -n monitoring \
+  --set loki.commonConfig.replication_factor=1 \
+  --set loki.storage.type=filesystem \
+  --set singleBinary.replicas=1</div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <h4>Mimir 설치 (메트릭)</h4>
+          <p>모놀리식 모드로 설치해 Prometheus 역할을 대체합니다. (기존 kube-prometheus-stack의 Prometheus를 계속 쓰고 Mimir는 장기 보관용으로만 붙이는 구성도 가능)</p>
+          <div class="cmd">helm install mimir grafana/mimir-distributed -n monitoring \
+  --set mimir.structuredConfig.limits.max_global_series_per_user=0 \
+  --set minio.enabled=true</div>
+          <p>실습 편의상 차트 내장 <span class="kbd">minio.enabled=true</span> 옵션으로 간이 오브젝트 스토리지를 함께 띄웁니다.</p>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <h4>Tempo 설치 (트레이스)</h4>
+          <div class="cmd">helm install tempo grafana/tempo -n monitoring \
+  --set tempo.storage.trace.backend=local</div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">5</div>
+          <h4>Grafana 설치 &amp; 데이터소스 연결</h4>
+          <p>Grafana를 설치한 뒤, Loki·Mimir·Tempo를 데이터소스로 등록합니다.</p>
+          <div class="cmd">helm install grafana grafana/grafana -n monitoring \
+  --set persistence.enabled=true \
+  --set datasources."datasources\.yaml".apiVersion=1 \
+  --set datasources."datasources\.yaml".datasources[0].name=Loki \
+  --set datasources."datasources\.yaml".datasources[0].type=loki \
+  --set datasources."datasources\.yaml".datasources[0].url=http://loki-gateway.monitoring</div>
+          <p>Mimir(Prometheus 호환 API)와 Tempo도 같은 방식으로 <span class="kbd">datasources.yaml</span>에 추가합니다.</p>
+        </div>
+
+        <div class="step">
+          <div class="step-num">6</div>
+          <h4>Alloy 설치 (수집기, DaemonSet)</h4>
+          <p>모든 노드에서 로그·메트릭을 걷어 각각 Loki·Mimir로, 애플리케이션이 보내는 OTLP 트레이스는 Tempo로 전달하도록 구성합니다.</p>
+          <div class="cmd">helm install alloy grafana/alloy -n monitoring \
+  --set-string 'alloy.configMap.content=
+loki.write "default" {
+  endpoint {
+    url = "http://loki-gateway.monitoring/loki/api/v1/push"
+  }
+}
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://mimir-nginx.monitoring/api/v1/push"
+  }
+}
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo.monitoring:4317"
+  }
+}
+'</div>
+          <div class="note">
+            <span class="tag">참고</span>
+            실제 운영에서는 위 파이프라인을 별도 <span class="kbd">values.yaml</span> 파일로 분리해서 관리하는 것을 권장합니다. 인라인 <span class="kbd">--set-string</span>은 예시일 뿐입니다.
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">7</div>
+          <h4>설치 확인</h4>
+          <div class="cmd">kubectl get pods -n monitoring
+kubectl get svc -n monitoring | grep grafana</div>
+          <p>Grafana에 접속해 Explore 메뉴에서 Loki/Mimir/Tempo 데이터소스로 각각 조회가 되면 성공입니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recap -->
+    <div class="recap">
+      <h3 style="margin-top:0;">한눈에 정리</h3>
+      <ul>
+        <li>관찰 가능성의 3대 축: 로그(무슨 일) · 메트릭(지금 수치) · 트레이스(어디를 거쳤나)</li>
+        <li>LGTM = Loki(로그) + Grafana(시각화) + Tempo(트레이스) + Mimir(메트릭)</li>
+        <li>Alloy는 이 넷에게 데이터를 실어나르는 통합 수집기, OpenTelemetry 호환</li>
+        <li>장점: 통합 조회, 오픈소스, 수평 확장 / 단점: 컴포넌트 수 많음, 객체 스토리지 필요, 학습 곡선</li>
+        <li>소규모 클러스터라면 전체 스택보다 Prometheus+Grafana만으로 시작하는 것도 합리적 선택</li>
+        <li>랩 환경에서는 각 컴포넌트를 모놀리식/filesystem 모드로 설치해 리소스 절약</li>
+      </ul>
+    </div>
+
+    <footer>
+      <p>Grafana Labs 공식 문서(Alloy, Loki, Mimir, Tempo, Grafana) 기준으로 재구성</p>
+      <p>작성일: 2026-07-10</p>
+    </footer>
+  </div>
+</body>
+</html>

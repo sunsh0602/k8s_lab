@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: metallb-dev
+  name: openebs-dev
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -12,21 +12,17 @@ spec:
       targetRevision: master
       ref: local-git
 
-    - repoURL: https://metallb.github.io/metallb
-      chart: metallb
-      targetRevision: 0.14.9
+    - repoURL: https://openebs.github.io/openebs
+      chart: openebs
+      targetRevision: 4.1.1   # ⚠️ 최신 버전 확인 후 고정 (helm search repo openebs/openebs --versions)
       helm:
-        releaseName: metallb
+        releaseName: openebs
         valueFiles:
-          - $local-git/03-metallb/values/values-dev.yaml
-
-    - repoURL: https://github.com/sunsh0602/k8s_lab.git
-      targetRevision: master
-      path: 03-metallb/manifests/dev
+          - $local-git/03-openebs/values/dev/openebs.yaml
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: metallb-system
+    namespace: openebs
 
   syncPolicy:
     automated:

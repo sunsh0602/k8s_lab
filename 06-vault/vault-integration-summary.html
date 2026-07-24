@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vault + Kubernetes 연동 완료 보고서</title>
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-inset: #eef1f4;
+      --text-primary: #1a1a1a;
+      --text-secondary: #5a5a5a;
+      --border-color: #e0e0e0;
+      --accent: #1f6feb;
+      --accent-soft: rgba(31, 111, 235, 0.1);
+      --success: #059669;
+      --success-soft: rgba(5, 150, 105, 0.1);
+      --warning: #b45309;
+      --warning-soft: rgba(217, 119, 6, 0.1);
+      --code-bg: #24292e;
+      --code-text: #e8e8e8;
+      --table-head-bg: #1f6feb;
+      --table-head-text: #ffffff;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    header {
+      margin-bottom: 40px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 30px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      text-wrap: balance;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 17px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: var(--success-soft);
+      color: var(--success);
+      border: 1px solid var(--success);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .overview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .info-box {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 13px;
+    }
+
+    .info-box-label {
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      font-size: 11px;
+    }
+
+    .info-box-value {
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: ui-monospace, "SF Mono", "Courier New", monospace;
+    }
+
+    /* section = one of the 3 phases */
+    .phase {
+      margin-bottom: 48px;
+    }
+
+    .phase-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .phase-num {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background-color: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .phase-head h2 {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .phase-head .phase-sub {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .card {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 16px;
+      border-left: 4px solid var(--accent);
+    }
+
+    .card h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .card p.lead {
+      font-size: 14px;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+
+    .code-block {
+      background-color: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      font-family: ui-monospace, "SF Mono", "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--code-text);
+      margin-top: 8px;
+      white-space: pre;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+
+    .config-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background-color: var(--bg-primary);
+    }
+
+    .config-table th {
+      background-color: var(--table-head-bg);
+      color: var(--table-head-text);
+      text-align: left;
+      padding: 9px 12px;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .config-table td {
+      padding: 9px 12px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+
+    .config-table tr:nth-child(even) td {
+      background-color: var(--bg-inset);
+    }
+
+    .config-table td.key {
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      width: 1%;
+    }
+
+    .config-table td.val {
+      font-family: ui-monospace, "SF Mono", "Courier New", monospace;
+      color: var(--accent);
+      word-break: break-all;
+    }
+
+    .result-box {
+      background-color: var(--success-soft);
+      border: 1px solid var(--success);
+      border-left: 4px solid var(--success);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+
+    .result-box .result-label {
+      color: var(--success);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+
+    .note {
+      background-color: var(--accent-soft);
+      border-left: 4px solid var(--accent);
+      padding: 10px 14px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    code {
+      font-family: ui-monospace, "SF Mono", "Courier New", monospace;
+      background-color: var(--bg-inset);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+
+    /* Troubleshooting box */
+    .trouble {
+      background-color: var(--warning-soft);
+      border: 1px solid var(--warning);
+      border-radius: 10px;
+      padding: 22px 24px;
+      margin: 20px 0;
+    }
+
+    .trouble-tag {
+      display: inline-block;
+      background-color: var(--warning);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 10px;
+    }
+
+    .trouble h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .trouble-row {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      gap: 10px;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    .trouble-row .k {
+      font-weight: 700;
+      color: var(--warning);
+    }
+
+    /* Flow diagram */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .flow-node {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 11px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .flow-node.dim {
+      color: var(--text-secondary);
+      font-weight: 400;
+      font-size: 12px;
+      background: none;
+      border: none;
+      padding: 3px;
+    }
+
+    .flow-arrow {
+      display: flex;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 16px;
+      line-height: 1;
+      padding: 2px 0;
+    }
+
+    .verify-output {
+      background-color: var(--code-bg);
+      color: var(--success);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: ui-monospace, "SF Mono", "Courier New", monospace;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    .checklist {
+      list-style: none;
+      margin-top: 10px;
+    }
+
+    .checklist li {
+      padding: 6px 0 6px 24px;
+      position: relative;
+      font-size: 14px;
+    }
+
+    .checklist li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--success);
+      font-weight: 700;
+    }
+
+    .summary-final {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 28px;
+      margin-top: 20px;
+    }
+
+    .summary-final h2 {
+      font-size: 20px;
+      margin-bottom: 16px;
+      color: var(--accent);
+    }
+
+    footer {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin-top: 50px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    footer p + p { margin-top: 4px; }
+
+    @media (max-width: 640px) {
+      .container { padding: 30px 16px; }
+      h1 { font-size: 24px; }
+      .card { padding: 18px; }
+      .trouble-row { grid-template-columns: 70px 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Vault + Kubernetes 연동 완료 보고서</h1>
+      <p class="subtitle">Ubuntu 호스트 Vault 설치부터 Pod 시크릿 자동 주입 검증까지</p>
+      <div class="badges">
+        <span class="badge">✓ Vault 설치 &amp; Unseal</span>
+        <span class="badge">✓ Kubernetes Auth 연동</span>
+        <span class="badge">✓ Agent Injector 배포</span>
+        <span class="badge">✓ 시크릿 자동 주입 검증</span>
+      </div>
+
+      <div class="overview">
+        <div class="info-box">
+          <div class="info-box-label">Vault 서버</div>
+          <div class="info-box-value">192.168.137.10:8200<br>(host, systemd)</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">K8s API</div>
+          <div class="info-box-value">192.168.137.10:6443</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">Storage</div>
+          <div class="info-box-value">Raft (Integrated)</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">Injector Namespace</div>
+          <div class="info-box-value">vault</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- PHASE 1 -->
+    <div class="phase">
+      <div class="phase-head">
+        <div class="phase-num">1</div>
+        <div>
+          <h2>Vault 설치 &amp; 초기화</h2>
+          <div class="phase-sub">Ubuntu 24.04 호스트(master)에 APT로 직접 설치</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>APT 설치 + Raft 설정 + systemd 기동</h3>
+        <p class="lead">HashiCorp APT 저장소 등록 → <code>vault</code> 패키지 설치 → <code>/etc/vault.d/vault.hcl</code> 작성 → systemd 서비스 기동.</p>
+        <div class="code-block"># 설정 파일 핵심 내용
+ui = true
+disable_mlock = false   # Vault 2.x부터 명시 필수
+
+storage "raft" {
+  path = "/opt/vault/data"
+}
+
+listener "tcp" {
+  address     = "0.0.0.0:8200"
+  tls_disable = 1        # 랩 환경, 내부망 전용
+}
+
+api_addr     = "http://192.168.137.10:8200"
+cluster_addr = "http://192.168.137.10:8201"</div>
+        <div class="result-box">
+          <div class="result-label">결과</div>
+          Vault 서비스가 <code>active (running)</code>, Sealed 상태로 대기
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Operator Init &amp; Unseal</h3>
+        <p class="lead">5개의 Unseal Key(threshold 3)와 Root Token을 발급받고, 3개 키로 Unseal 처리.</p>
+        <div class="code-block">vault operator init -key-shares=5 -key-threshold=3
+vault operator unseal   # 3회 반복</div>
+        <div class="result-box">
+          <div class="result-label">결과</div>
+          <code>Sealed: false</code>, <code>HA Mode: active</code> — 정상 서비스 시작
+        </div>
+        <div class="note">
+          Unseal Key와 Root Token은 패스워드 매니저 등 안전한 곳에 별도 보관 (문서에는 저장하지 않음)
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>KV v2 Secrets Engine 활성화</h3>
+        <div class="code-block">vault secrets enable -version=2 -path=secret kv
+vault kv put secret/app/database username=&lt;DB_USERNAME&gt; password=&lt;DB_PASSWORD&gt;</div>
+        <div class="result-box">
+          <div class="result-label">결과</div>
+          <code>secret/app/database</code> 경로에 테스트 시크릿 저장 확인
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 2 -->
+    <div class="phase">
+      <div class="phase-head">
+        <div class="phase-num">2</div>
+        <div>
+          <h2>Kubernetes Auth Method 연동</h2>
+          <div class="phase-sub">Pod의 ServiceAccount로 Vault에 인증할 수 있도록 구성</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Auth Method 활성화 &amp; 클러스터 등록</h3>
+        <div class="code-block">vault auth enable kubernetes
+
+vault write auth/kubernetes/config \
+  kubernetes_host="https://192.168.137.10:6443" \
+  kubernetes_ca_cert=@ca.crt \
+  token_reviewer_jwt="&lt;ServiceAccount JWT&gt;"</div>
+      </div>
+
+      <div class="card">
+        <h3>정책(Policy) &amp; 역할(Role) 생성</h3>
+        <p class="lead"><code>app-policy</code>로 읽기 권한 범위를 제한하고, <code>app-role</code>로 어떤 ServiceAccount가 이 정책을 받을지 결정.</p>
+        <div class="table-wrap">
+          <table class="config-table">
+            <thead><tr><th>구성 요소</th><th>값</th></tr></thead>
+            <tbody>
+              <tr><td class="key">Policy 경로</td><td class="val">secret/data/app/*, secret/metadata/app/* (read, list)</td></tr>
+              <tr><td class="key">Role 이름</td><td class="val">app-role</td></tr>
+              <tr><td class="key">허용 ServiceAccount</td><td class="val">default (namespace: default)</td></tr>
+              <tr><td class="key">연결된 Policy</td><td class="val">app-policy</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="result-box">
+          <div class="result-label">결과</div>
+          <code>default</code> 네임스페이스의 <code>default</code> SA를 가진 Pod만 <code>secret/app/*</code>를 읽을 수 있게 제한됨
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 3 -->
+    <div class="phase">
+      <div class="phase-head">
+        <div class="phase-num">3</div>
+        <div>
+          <h2>Vault Agent Injector 배포 &amp; 검증</h2>
+          <div class="phase-sub">Helm으로 Injector만 설치 (Vault 서버는 호스트에서 계속 운영)</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Helm 설치 (server 비활성화, injector만)</h3>
+        <div class="code-block">helm repo add hashicorp https://helm.releases.hashicorp.com
+kubectl create namespace vault
+
+# values-injector.yaml
+server:
+  enabled: false
+injector:
+  enabled: true
+  externalVaultAddr: "http://192.168.137.10:8200"
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+helm install vault hashicorp/vault -n vault -f values-injector.yaml</div>
+        <div class="result-box">
+          <div class="result-label">결과</div>
+          <code>vault-agent-injector</code> Pod <code>1/1 Running</code>, MutatingWebhook 등록 완료
+        </div>
+        <div class="note">
+          worker1 노드가 NotReady 상태라 master(control-plane)에 toleration을 추가해 스케줄링함
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>테스트 Pod 생성 (annotation 기반 자동 주입)</h3>
+        <div class="code-block">metadata:
+  annotations:
+    vault.hashicorp.com/agent-inject: "true"
+    vault.hashicorp.com/role: "app-role"
+    vault.hashicorp.com/agent-inject-secret-db: "secret/data/app/database"
+    vault.hashicorp.com/agent-inject-template-db: |
+      {{- with secret "secret/data/app/database" -}}
+      username: {{ .Data.data.username }}
+      password: {{ .Data.data.password }}
+      {{- end -}}</div>
+      </div>
+
+      <div class="trouble">
+        <span class="trouble-tag">Troubleshooting</span>
+        <h3>403 Permission Denied — Kubernetes Auth 실패</h3>
+        <div class="trouble-row"><div class="k">증상</div><div>init container(vault-agent-init) 로그에 <code>PUT auth/kubernetes/login → 403 permission denied</code> 반복</div></div>
+        <div class="trouble-row"><div class="k">원인</div><div><code>token_reviewer_jwt</code>를 <code>kubectl create token default</code>로 발급 — 기본 1시간 후 만료되는 단기 토큰이라 시간이 지나 인증 실패</div></div>
+        <div class="trouble-row"><div class="k">해결</div><div>전용 <code>vault-auth</code> ServiceAccount 생성 → <code>kubernetes.io/service-account-token</code> 타입 Secret으로 장기 토큰 발급 → <code>system:auth-delegator</code> ClusterRole 바인딩 → Vault 설정을 새 토큰으로 갱신</div></div>
+        <div class="code-block">kubectl apply -f vault-auth-sa.yaml   # ServiceAccount + Secret + ClusterRoleBinding
+
+vault write auth/kubernetes/config \
+  kubernetes_host="https://192.168.137.10:6443" \
+  token_reviewer_jwt="&lt;vault-auth 장기 토큰&gt;" \
+  kubernetes_ca_cert=@ca.crt</div>
+      </div>
+
+      <div class="card">
+        <h3>최종 검증</h3>
+        <div class="code-block">kubectl exec vault-agent-test -c app -- cat /vault/secrets/db</div>
+        <div class="verify-output">username: &lt;DB_USERNAME&gt;
+password: &lt;DB_PASSWORD&gt;</div>
+        <div class="result-box">
+          <div class="result-label">결과</div>
+          Pod 코드 수정 없이 <code>/vault/secrets/db</code> 파일로 시크릿이 자동 렌더링됨 — Vault ↔ Kubernetes 연동 검증 완료
+        </div>
+      </div>
+    </div>
+
+    <!-- FINAL FLOW -->
+    <div class="summary-final">
+      <h2>최종 인증 &amp; 주입 흐름</h2>
+      <div class="flow">
+        <div class="flow-node">Pod 생성 (annotation 포함, default SA)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node dim">Vault Agent Injector가 Webhook으로 sidecar 주입</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node">vault-agent-init이 ServiceAccount JWT로 Vault 로그인</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node dim">Vault가 vault-auth 토큰으로 K8s TokenReview 검증</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node">app-role 매칭 → app-policy 부여 → Vault Token 발급</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node dim">secret/data/app/database 조회</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node">/vault/secrets/db 파일로 렌더링 → 앱이 그대로 읽음</div>
+      </div>
+    </div>
+
+    <div class="summary-final">
+      <h2>전체 체크리스트</h2>
+      <ul class="checklist">
+        <li>Vault APT 설치 및 systemd 서비스 정상 기동</li>
+        <li>Raft storage 초기화, Unseal 완료 (HA Mode: active)</li>
+        <li>KV v2 Secrets Engine 활성화 및 테스트 시크릿 저장</li>
+        <li>Kubernetes Auth Method 활성화 및 클러스터 등록</li>
+        <li>app-policy / app-role 생성으로 최소 권한 부여</li>
+        <li>Vault Agent Injector Helm 배포 (외부 Vault 연결)</li>
+        <li>장기 토큰으로 token_reviewer_jwt 교체 (403 이슈 해결)</li>
+        <li>테스트 Pod에서 시크릿 자동 주입 실증 완료</li>
+      </ul>
+    </div>
+
+    <footer>
+      <p>관련 문서: install-plan.html (설치 계획) · k8s-auth-setup.html (K8s Auth 상세)</p>
+      <p>작성일: 2026-07-07</p>
+    </footer>
+  </div>
+</body>
+</html>

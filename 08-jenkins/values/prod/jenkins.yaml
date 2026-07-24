@@ -1,0 +1,42 @@
+# jenkins/jenkins Helm values — 운영계
+# 공식 차트: https://charts.jenkins.io  (chart: jenkins)
+
+controller:
+  # 컨트롤러에서는 빌드 미실행, 빌드는 k8s 동적 에이전트 Pod로 위임
+  numExecutors: 0
+
+  # 리소스 (운영계는 여유 있게)
+  resources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      memory: "4Gi"
+
+  # UI 노출은 Istio VirtualService(manifests/prod)로 처리
+  ingress:
+    enabled: false
+  serviceType: ClusterIP
+
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - configuration-as-code
+
+  JCasC:
+    defaultConfig: true
+    configScripts:
+      welcome-message: |
+        jenkins:
+          systemMessage: "k8s_lab prod Jenkins — managed by ArgoCD (GitOps)"
+
+# 빌드 데이터 영속화 — rook-ceph 블록 스토리지
+# ⚠️ storageClass 이름은 실제 랩 값으로 확인 후 조정 (kubectl get sc)
+persistence:
+  enabled: true
+  storageClass: "ceph-block"
+  size: "20Gi"
+
+agent:
+  enabled: true

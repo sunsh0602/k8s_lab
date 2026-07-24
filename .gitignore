@@ -1,0 +1,5 @@
+# Vault operator init 산출물 — unseal keys / root token (절대 커밋 금지)
+06-vault/info
+
+# Claude Code 로컬 세션/설정
+.claude/

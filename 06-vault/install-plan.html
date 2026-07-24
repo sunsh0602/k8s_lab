@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vault 설치 계획 - Ubuntu APT 직접 설치</title>
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-tertiary: #1e1e1e;
+      --text-primary: #1a1a1a;
+      --text-secondary: #5a5a5a;
+      --border-color: #e0e0e0;
+      --accent: #1f6feb;
+      --accent-dark: #1550ba;
+      --warning: #d97706;
+      --success: #059669;
+      --code-bg: #2d2d2d;
+      --code-text: #e8e8e8;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #0d1117;
+        --bg-secondary: #161b22;
+        --bg-tertiary: #21262d;
+        --text-primary: #e6edf3;
+        --text-secondary: #8b949e;
+        --border-color: #30363d;
+        --accent: #58a6ff;
+        --accent-dark: #79c0ff;
+        --warning: #fb8500;
+        --code-bg: #0d1117;
+        --code-text: #e8e8e8;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --border-color: #30363d;
+      --accent: #58a6ff;
+      --accent-dark: #79c0ff;
+      --warning: #fb8500;
+    }
+
+    :root[data-theme="light"] {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-tertiary: #1e1e1e;
+      --text-primary: #1a1a1a;
+      --text-secondary: #5a5a5a;
+      --border-color: #e0e0e0;
+      --accent: #1f6feb;
+      --accent-dark: #1550ba;
+      --warning: #d97706;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    header {
+      margin-bottom: 50px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 30px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      text-wrap: balance;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .overview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .info-box {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 14px;
+    }
+
+    .info-box-label {
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+    }
+
+    .info-box-value {
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: monospace;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      margin-bottom: 50px;
+    }
+
+    .step {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 28px;
+      border-left: 4px solid var(--accent);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .step-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      background-color: var(--accent);
+      color: var(--bg-primary);
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      flex: 1;
+    }
+
+    .step-title h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-primary);
+    }
+
+    .step-desc {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .code-block {
+      background-color: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      margin-top: 12px;
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--code-text);
+    }
+
+    .code-block code {
+      white-space: pre;
+      word-break: break-all;
+      overflow-wrap: break-word;
+    }
+
+    .warning-box {
+      background-color: rgba(217, 119, 6, 0.1);
+      border: 1px solid var(--warning);
+      border-left: 4px solid var(--warning);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 40px;
+    }
+
+    .warning-box h3 {
+      color: var(--warning);
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .warning-box p {
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .warning-box p + p {
+      margin-top: 10px;
+    }
+
+    .note {
+      background-color: var(--bg-tertiary);
+      border-left: 4px solid var(--accent);
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .note {
+        background-color: rgba(88, 166, 255, 0.1);
+      }
+    }
+
+    .next-steps {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 28px;
+      margin-top: 40px;
+    }
+
+    .next-steps h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--accent);
+    }
+
+    .next-steps ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .next-steps li {
+      padding: 8px 0;
+      padding-left: 24px;
+      position: relative;
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .next-steps li:before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin-top: 60px;
+      padding-top: 30px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 30px 16px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .overview {
+        grid-template-columns: 1fr;
+      }
+
+      .step {
+        padding: 20px;
+      }
+
+      .step-header {
+        gap: 12px;
+      }
+
+      .step-number {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+      }
+
+      .step-title h2 {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>HashiCorp Vault 설치 계획</h1>
+      <p class="subtitle">Ubuntu 24.04 APT 직접 설치 (Master 노드)</p>
+
+      <div class="overview">
+        <div class="info-box">
+          <div class="info-box-label">대상 서버</div>
+          <div class="info-box-value">master<br>192.168.137.10</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">OS</div>
+          <div class="info-box-value">Ubuntu 24.04.4 LTS</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">설치 방식</div>
+          <div class="info-box-value">APT Repository</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">저장소</div>
+          <div class="info-box-value">Integrated Raft</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="warning-box">
+      <h3>⚠️ 보안 주의사항</h3>
+      <p><strong>Unseal Key와 Root Token은 절대로 문서나 공유 장소에 저장하지 않습니다.</strong></p>
+      <p>초기화 후 발급되는 Unseal Key(5개) 3개와 Root Token은 반드시 안전한 곳(예: 패스워드 매니저, 오프라인 저장소)에 별도로 보관하세요. 이 계획 문서에는 더미 값만 표시하며, 실제 설치 시 발급된 값을 즉시 기록하고 보호하셔야 합니다.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <div class="step-title">
+            <h2>사전 준비</h2>
+            <p class="step-desc">설치 대상 확인 및 필요한 포트 열기</p>
+          </div>
+        </div>
+        <p>다음 정보를 확인합니다:</p>
+        <ul style="margin: 12px 0 0 20px; color: var(--text-secondary); font-size: 14px;">
+          <li><strong>SSH 접속:</strong> master 노드에 SSH로 접속 가능</li>
+          <li><strong>권한:</strong> sudo 권한 필요</li>
+          <li><strong>포트:</strong> 8200 (API/UI), 8201 (Cluster) 개방 필요</li>
+          <li><strong>디스크:</strong> /opt 경로에 최소 5GB 여유 공간</li>
+        </ul>
+        <div class="note">
+          💡 현재 master 노드는 192.168.137.10에 Ubuntu 24.04.4 LTS가 실행 중입니다.
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <div class="step-title">
+            <h2>HashiCorp GPG 키 및 저장소 등록</h2>
+            <p class="step-desc">APT 저장소에서 Vault를 설치하기 위한 준비</p>
+          </div>
+        </div>
+        <p>HashiCorp의 공식 APT 저장소를 등록합니다.</p>
+        <div class="code-block"><code>wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg</code></div>
+        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 14px;">저장소 리스트 추가:</p>
+        <div class="code-block"><code>echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list</code></div>
+        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 14px;">패키지 인덱스 업데이트:</p>
+        <div class="code-block"><code>sudo apt update</code></div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <div class="step-title">
+            <h2>Vault 패키지 설치</h2>
+            <p class="step-desc">APT를 통한 vault 바이너리 및 관련 파일 설치</p>
+          </div>
+        </div>
+        <div class="code-block"><code>sudo apt install -y vault</code></div>
+        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 14px;">설치 후 버전 확인:</p>
+        <div class="code-block"><code>vault version</code></div>
+        <div class="note">
+          💡 APT 설치 시 vault 사용자, 그룹, systemd 서비스가 자동으로 생성됩니다.
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">4</div>
+          <div class="step-title">
+            <h2>데이터 디렉토리 생성 및 권한 설정</h2>
+            <p class="step-desc">Vault가 저장소 데이터를 보관할 디렉토리 준비</p>
+          </div>
+        </div>
+        <p>Raft 저장소용 디렉토리를 생성합니다:</p>
+        <div class="code-block"><code>sudo mkdir -p /opt/vault/data
+sudo chown -R vault:vault /opt/vault/data
+sudo chmod 700 /opt/vault/data</code></div>
+        <div class="note">
+          💡 /opt/vault/data는 Vault의 상태, Raft 로그, 시크릿 등이 저장되는 중요한 디렉토리입니다.
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">5</div>
+          <div class="step-title">
+            <h2>Vault 설정 파일 작성</h2>
+            <p class="step-desc">/etc/vault.d/vault.hcl 설정</p>
+          </div>
+        </div>
+        <p>기본 vault.hcl 파일을 생성합니다 (TLS는 나중에 추가 가능):</p>
+        <div class="code-block"><code>sudo tee /etc/vault.d/vault.hcl > /dev/null <<EOF
+# Vault 설정 파일
+ui = true
+
+storage "raft" {
+  path = "/opt/vault/data"
+}
+
+listener "tcp" {
+  address = "0.0.0.0:8200"
+  tls_disable = 1
+}
+
+api_addr = "http://192.168.137.10:8200"
+cluster_addr = "http://192.168.137.10:8201"
+EOF</code></div>
+        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 14px;">설정 파일 권한:</p>
+        <div class="code-block"><code>sudo chmod 644 /etc/vault.d/vault.hcl</code></div>
+        <div class="note">
+          💡 <strong>tls_disable = 1</strong>은 랩 환경 및 내부 테스트용입니다. 프로덕션 환경에서는 반드시 TLS를 활성화하세요.
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">6</div>
+          <div class="step-title">
+            <h2>Vault 서비스 활성화 및 시작</h2>
+            <p class="step-desc">systemd 서비스를 통해 Vault 실행</p>
+          </div>
+        </div>
+        <p>systemd 서비스를 활성화하고 시작합니다:</p>
+        <div class="code-block"><code>sudo systemctl enable vault
+sudo systemctl start vault</code></div>
+        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 14px;">서비스 상태 확인:</p>
+        <div class="code-block"><code>sudo systemctl status vault</code></div>
+        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 14px;">로그 확인:</p>
+        <div class="code-block"><code>sudo journalctl -u vault -f</code></div>
+        <div class="note">
+          💡 "Vault server started! Log data will stream in below:" 메시지가 보이면 정상 시작된 것입니다.
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">7</div>
+          <div class="step-title">
+            <h2>Vault 초기화 (Operator Init)</h2>
+            <p class="step-desc">Unseal Key와 Root Token 생성</p>
+          </div>
+        </div>
+        <p>환경 변수를 설정한 후 초기화를 진행합니다:</p>
+        <div class="code-block"><code>export VAULT_ADDR='http://127.0.0.1:8200'
+vault operator init -key-shares=5 -key-threshold=3</code></div>
+        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 14px;">예상 출력:</p>
+        <div class="code-block"><code>Unseal Key 1: xxxxxxxxxxxxxxxxxxxxxxxxxx
+Unseal Key 2: xxxxxxxxxxxxxxxxxxxxxxxxxx
+Unseal Key 3: xxxxxxxxxxxxxxxxxxxxxxxxxx
+Unseal Key 4: xxxxxxxxxxxxxxxxxxxxxxxxxx
+Unseal Key 5: xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Initial Root Token: s.xxxxxxxxxxxxxxxx</code></div>
+        <div class="warning-box" style="background-color: rgba(217, 119, 6, 0.15); margin-top: 16px;">
+          <h3>🔐 중요: Unseal Key와 Root Token 저장</h3>
+          <p>위 출력 결과를 <strong>즉시 안전한 위치에 저장</strong>하세요:</p>
+          <ul style="margin: 10px 0 0 20px; color: var(--text-primary); font-size: 14px;">
+            <li>Unseal Key 5개 중 3개가 필요합니다 (threshold)</li>
+            <li>Root Token은 초기 관리용입니다</li>
+            <li><strong>절대로</strong> 공개 저장소나 이메일로 전송하지 마세요</li>
+            <li>비트와든(Bitwarden) 같은 보안 패스워드 매니저 사용 권장</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">8</div>
+          <div class="step-title">
+            <h2>Vault Unseal</h2>
+            <p class="step-desc">저장된 Unseal Key로 Vault를 Unseal 상태로 변경</p>
+          </div>
+        </div>
+        <p>3개의 Unseal Key를 사용하여 Vault를 언씰합니다 (3회 실행):</p>
+        <div class="code-block"><code>export VAULT_ADDR='http://127.0.0.1:8200'
+vault operator unseal
+
+# 각 실행 시마다 Unseal Key를 입력합니다.
+# 예시 입력 값:
+# Unseal Key (will be hidden): [여기에 첫 번째 키 입력]</code></div>
+        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 14px;">3번 반복 실행 후 상태 확인:</p>
+        <div class="code-block"><code>vault status</code></div>
+        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 14px;">예상 출력:</p>
+        <div class="code-block"><code>Key             Value
+---             -----
+Seal Type       shamir
+Initialized     true
+Sealed          false
+Total Shares    5
+Threshold       3
+...
+Cluster Name    vault-cluster-xxx
+Version         1.x.x</code></div>
+        <div class="note">
+          💡 "Sealed: false"가 표시되면 언씰 완료입니다.
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">9</div>
+          <div class="step-title">
+            <h2>Vault 정상 동작 확인</h2>
+            <p class="step-desc">API 및 UI를 통한 동작 확인</p>
+          </div>
+        </div>
+        <p>터미널에서 Root Token으로 로그인하여 상태를 확인합니다:</p>
+        <div class="code-block"><code>export VAULT_ADDR='http://127.0.0.1:8200'
+export VAULT_TOKEN='s.xxxxxxxxxxxxxxxx'  # 위에서 발급받은 Root Token
+
+vault status
+vault auth list
+vault secrets list</code></div>
+        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 14px;">웹 UI 접속:</p>
+        <div class="code-block"><code>http://192.168.137.10:8200/ui</code></div>
+        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 14px;">UI 로그인:</p>
+        <ul style="margin: 12px 0 0 20px; color: var(--text-secondary); font-size: 14px;">
+          <li><strong>Token:</strong> 위의 Root Token 입력</li>
+          <li><strong>Sign in</strong> 클릭</li>
+        </ul>
+        <div class="note">
+          💡 UI에서 Secrets, Auth Methods, Audit 탭 등을 확인할 수 있습니다.
+        </div>
+      </div>
+    </div>
+
+    <div class="next-steps">
+      <h2>다음 단계 (선택사항)</h2>
+      <ul>
+        <li><strong>Audit Log 활성화:</strong> 모든 Vault 작업을 로깅하기 위해 audit backend 설정</li>
+        <li><strong>KV v2 Secrets Engine:</strong> 시크릿 저장소 활성화 (기본값으로 많이 사용)</li>
+        <li><strong>TLS 인증서 설정:</strong> 프로덕션 배포 시 자체 서명 또는 내부 CA 인증서로 tls_disable 비활성화</li>
+        <li><strong>Kubernetes 연동:</strong> k8s 클러스터에서 Vault 인증 메커니즘 설정 (Kubernetes Auth Method)</li>
+        <li><strong>Backup 및 Disaster Recovery:</strong> Raft snapshot을 통한 정기적인 백업 자동화</li>
+        <li><strong>권한 관리 (RBAC):</strong> 역할 기반 접근 제어로 Root Token 외 별도 정책 설정</li>
+      </ul>
+    </div>
+
+    <footer>
+      <p>이 계획은 Ubuntu 24.04 환경에서의 HashiCorp Vault 기본 설치를 가이드합니다.</p>
+      <p>자세한 정보는 <a href="https://www.vaultproject.io/docs" style="color: var(--accent);">Vault 공식 문서</a>를 참고하세요.</p>
+    </footer>
+  </div>
+</body>
+</html>
