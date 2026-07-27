@@ -5,7 +5,7 @@ metadata:
   namespace: rook-ceph          # [필수] 라우팅 대상 목적지 서비스가 존재하는 네임스페이스
 spec:
   hosts:
-    - "ceph-dev.apppaas.io"     # [필수] 개발 환경 대시보드 접근에 사용할 고유 도메인 주소
+    - "ceph-dev.local"          # [필수] 개발 환경 대시보드 접근에 사용할 고유 도메인 주소
   gateways:
     - istio-system/istio-ingressgateway # [필수] 트래픽을 인입시킬 대상 Istio 인그레스 게이트웨이 지정
   http:

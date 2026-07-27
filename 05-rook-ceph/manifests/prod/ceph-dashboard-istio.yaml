@@ -5,7 +5,7 @@ metadata:
   namespace: rook-ceph
 spec:
   hosts:
-    - "ceph.apppaas.io"         # [필수] 운영 환경 대시보드 접근에 사용할 고유 도메인 주소
+    - "ceph.local"              # [필수] 운영 환경 대시보드 접근에 사용할 고유 도메인 주소
   gateways:
     - istio-system/istio-ingressgateway
   http:
