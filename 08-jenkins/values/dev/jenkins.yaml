@@ -37,7 +37,7 @@ controller:
 # openebs 설치 시 기본 생성되는 storageClass. (kubectl get sc 로 확인)
 persistence:
   enabled: true
-  storageClass: "openebs-hostpath"
+#  storageClass: "openebs-hostpath"
   size: "8Gi"
 
 # 동적 빌드 에이전트 (kubernetes 플러그인) — 기본 활성
