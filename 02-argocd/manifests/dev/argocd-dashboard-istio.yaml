@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: argocd-dashboard # [필수] VirtualService의 쿠버네티스 자원 식별명
+  namespace: argocd         # [필수] 라우팅 대상 목적지 서비스가 존재하는 네임스페이스
+spec:
+  hosts:
+    - "argocd-dev.lab"          # [필수] 개발 환경 대시보드 접근에 사용할 고유 도메인 주소
+  gateways:
+    - istio-system/istio-ingressgateway # [필수] 트래픽을 인입시킬 대상 Istio 인그레스 게이트웨이 지정
+  # ArgoCD가 자체 TLS를 처리하므로(secure 모드), 게이트웨이는 복호화하지 않고
+  # SNI(argocd-dev.lab)만 보고 암호화 스트림을 그대로 백엔드 443으로 전달(passthrough).
+  tls:
+    - match:
+        - sniHosts:
+            - "argocd-dev.lab"  # [필수] TLS ClientHello의 SNI가 이 값일 때 매칭
+      route:
+        - destination:
+            host: argocd-server.argocd.svc.cluster.local # [필수] 사내망 내부의 실제 목적지 내부 서비스 도메인
+            port:
+              number: 443      # [필수] argocd-server가 자체 TLS로 수신 대기 중인 포트

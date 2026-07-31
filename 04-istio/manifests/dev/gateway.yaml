@@ -16,3 +16,13 @@ spec:
         protocol: HTTP
       hosts:
         - "*"
+    # ArgoCD 등 자체 TLS를 처리하는 앱을 위한 443 TLS passthrough (SNI 기반)
+    # 게이트웨이는 복호화하지 않고 SNI만 보고 백엔드로 암호화 스트림을 그대로 전달
+    - port:
+        number: 443
+        name: tls-passthrough
+        protocol: TLS
+      tls:
+        mode: PASSTHROUGH
+      hosts:
+        - "argocd-dev.lab"
