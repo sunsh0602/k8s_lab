@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: rook-ceph-cluster-dev # [필수] ArgoCD 콘솔에서 식별할 애플리케이션 이름
   namespace: argocd           # [필수] ArgoCD 컨트롤러가 동작 중인 시스템 네임스페이스
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"  # 오퍼레이터 앱(wave 10) 이후에 동기화
 spec:
   project: default            # [필수] 해당 애플리케이션을 귀속시킬 ArgoCD 프로젝트 그룹
   sources:                    # [필수] 병합 배포할 원격 소스(Helm, Git) 목록 정의 영역 (Multiple Sources)
@@ -12,7 +14,7 @@ spec:
     
     - repoURL: 'https://charts.rook.io/release' # [필수] 오픈소스 공식 Rook-Ceph 오퍼레이터 차트 저장소 주소
       chart: rook-ceph-cluster                  # [필수] 가져올 대상 헬름 차트 패키지 명칭
-      targetRevision: 1.19.0                    # [필수] 고정하여 사용할 대상 헬름 차트 버전 번호
+      targetRevision: v1.20.2                   # [필수] 오퍼레이터와 동일 버전으로 고정
       helm:
         valueFiles:
           - $local-git/05-rook-ceph/values/values-dev-1node-1disk.yaml # [필수] 식별자($local-git) 경로 내부의 개발 전용 밸류 파일 주입
@@ -32,3 +34,10 @@ spec:
       selfHeal: true          # [선택] 사용자가 클러스터 자원을 임의 수정 시 Git 상태로 자동 원복(자가치유)시킬지 여부
     syncOptions:
       - CreateNamespace=true  # [선택] 지정한 대상 네임스페이스가 클러스터에 존재하지 않을 시 자동 생성 여부
+      - ServerSideApply=true  # 대용량 리소스 apply 안정성
+    retry:                    # 오퍼레이터(CRD)가 준비될 때까지 재시도하며 수렴
+      limit: 10
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 3m
