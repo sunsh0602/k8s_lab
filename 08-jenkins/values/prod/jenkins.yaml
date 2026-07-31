@@ -35,7 +35,7 @@ controller:
 # ⚠️ storageClass 이름은 실제 랩 값으로 확인 후 조정 (kubectl get sc)
 persistence:
   enabled: true
-  storageClass: "ceph-block"
+    #  storageClass: "ceph-block"
   size: "20Gi"
 
 agent:
