@@ -9,7 +9,7 @@ metadata:
     argocd.argoproj.io/sync-wave: "50"
 spec:
   hosts:
-    - "jenkins.dev.local"   # ⚠️ 실제 도메인으로 조정
+    - "jenkins-dev.lab"   # dnsmasq 와일드카드(*.lab → istio GW .129)에 맞춘 개발계 도메인
   gateways:
     - istio-system/istio-ingressgateway
   http:
