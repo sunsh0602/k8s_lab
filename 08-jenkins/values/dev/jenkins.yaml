@@ -7,6 +7,11 @@ controller:
   image:
     tag: "2.504.3-jdk17"
 
+  # 고정 admin 자격증명 사용 → 랜덤 비번 생성 중단(매 sync 비번 변경 문제 해결).
+  # 참조 Secret: manifests/dev/admin-secret.yaml (jenkins-admin-fixed)
+  admin:
+    existingSecret: jenkins-admin-fixed
+
   # 컨트롤러(마스터)에서는 빌드를 실행하지 않고, 빌드는 k8s 동적 에이전트 Pod로 위임
   numExecutors: 0
 
