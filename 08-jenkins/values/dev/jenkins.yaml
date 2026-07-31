@@ -2,6 +2,11 @@
 # 공식 차트: https://charts.jenkins.io  (chart: jenkins)
 
 controller:
+  # 컨트롤러 이미지 태그 상향: 차트 기본(2.492.2)은 최신 플러그인(2.504.x 요구)과 불일치.
+  # tagLabel(jdk17)이 자동으로 붙어 최종 2.504.3-jdk17 이 됨.
+  image:
+    tag: "2.504.3"
+
   # 컨트롤러(마스터)에서는 빌드를 실행하지 않고, 빌드는 k8s 동적 에이전트 Pod로 위임
   numExecutors: 0
 
