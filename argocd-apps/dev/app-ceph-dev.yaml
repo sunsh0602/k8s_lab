@@ -14,7 +14,7 @@ spec:
     
     - repoURL: 'https://charts.rook.io/release' # [필수] 오픈소스 공식 Rook-Ceph 오퍼레이터 차트 저장소 주소
       chart: rook-ceph-cluster                  # [필수] 가져올 대상 헬름 차트 패키지 명칭
-      targetRevision: v1.20.2                   # [필수] 오퍼레이터와 동일 버전으로 고정
+      targetRevision: v1.16.9                   # [필수] 오퍼레이터와 동일 버전(classic CSI 안정판)
       helm:
         valueFiles:
           - $local-git/05-rook-ceph/values/values-dev-1node-1disk.yaml # [필수] 식별자($local-git) 경로 내부의 개발 전용 밸류 파일 주입

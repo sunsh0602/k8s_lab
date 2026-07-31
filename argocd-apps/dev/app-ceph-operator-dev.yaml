@@ -10,14 +10,9 @@ spec:
   source:
     repoURL: 'https://charts.rook.io/release'  # Rook 공식 차트 저장소
     chart: rook-ceph                           # 오퍼레이터 차트(=CRD + operator + ceph-csi-operator)
-    targetRevision: v1.20.2                     # 클러스터 앱과 동일 버전으로 고정
+    targetRevision: v1.16.9                     # classic CSI 안정판 (ceph-csi-operator 서브차트 없음)
     helm:
       releaseName: rook-ceph                    # 릴리스명(네임스페이스와 동일 관례)
-      values: |
-        # v1.20.2의 ceph-csi-operator 통합이 Driver/SA/RBAC을 완전히 생성하지 못해
-        # classic CSI(rook이 provisioner·SA·RBAC을 직접 생성)로 전환.
-        csi:
-          enableCSIOperator: false
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: rook-ceph
