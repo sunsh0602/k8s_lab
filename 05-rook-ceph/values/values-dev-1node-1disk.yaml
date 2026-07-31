@@ -71,6 +71,14 @@ cephBlockPools:               # 블록 스토리지 풀(Pool) 생성 설정 영�
       parameters:
         imageFormat: "2"      # [필수] Ceph RBD 이미지 아키텍처 포맷 버전 사양
         imageFeatures: layering # [필수] RBD 볼륨이 지원할 기능 정의 (쿠버네티스 연동 시 필수 기능)
+        # [필수] CSI 프로비저닝/확장/노드-스테이지에 사용할 Ceph 인증 시크릿 참조.
+        #        이걸 빠뜨리면 provisioner가 "provided secret is empty"로 실패함.
+        csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
+        csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+        csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
+        csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
 
 # 1노드/1디스크(OSD 1개)에서는 size 3 / EC 풀을 만들 수 없어 CephFS·ObjectStore(RGW)를 비활성화.
 # 블록 스토리지(rook-ceph-block)만 사용 → HEALTH_OK.
